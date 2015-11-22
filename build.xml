@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<project name="jsendpraat" default="dist" basedir=".">
+  <description>Java implemetation for sendpraat</description>
+  <!-- set global properties for this build -->
+  <property name="src"   location="."/>
+  <property name="build" location="build_${ant.project.name}"/>
+  <property name="dist"  location="dist"/>
+  <property name="srcfiles" value="nzilbb/jsendpraat/SendPraat.java nzilbb/http/IMessageHandler.java nzilbb/http/IProgressIndicator.java nzilbb/http/HttpRequestPostMultipart.java nzilbb/http/RequestCancelledException.java nzilbb/http/TemporaryFileStore.java nzilbb/http/FileDownloader.java org/json/**/*.java"/>
+  <property name="mainclass" value="nzilbb.jsendpraat.SendPraat"/>
+  <xmlproperty file="/var/lib/tomcat7/webapps/labbcat/WEB-INF/classes/key.xml" />
+  
+  <target name="init">
+    <!-- Create the time stamp -->
+    <tstamp/>
+    <!-- Create the build directory structure used by compile -->
+    <mkdir dir="${build}"/>
+  </target>
+  
+  <target name="compile" depends="init"
+          description="compile the source " >
+    <!-- Compile the java code from ${src} into ${build} -->
+    <javac srcdir="${src}" destdir="${build}"
+	   classpath=""
+	   includes="${srcfiles}"
+	   listfiles="yes"
+	   includeantruntime="false"
+	   target="6"
+	   source="6"
+	   debug="on"
+	   >
+      <compilerarg value="-Xlint"/>
+    </javac>
+  </target>
+  
+  <target name="native" depends="init"
+          description="compile native source code" >
+    <!-- Compile the sendpraat native library for this platform -->
+    <exec executable="gcc" os="Linux">
+      <arg line="-o libsendpraat.so"/>
+      <arg line="-shared"/>
+      <arg line="-Wl,-soname,libnative.so"/>
+      <arg line="-lX11"/>
+      <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include"/> <!-- change usr/lib/jvm/jdk1.7.0 to value of $JAVA_HOME  -->
+      <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include/linux"/>
+      <arg line="${src}/nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.c"/>
+      <arg line="-lc"/>
+      <arg line="-fPIC"/>
+    </exec>
+
+    <exec executable="cc" osfamily="mac">
+      <arg line="-o libsendpraat.so"/>
+      <arg line="-shared"/>
+      <arg line="-framework"/>
+      <arg line="CoreServices"/>
+      <arg line="-Wl,-soname,libnative.so"/>
+      <arg line="-lX11"/>
+      <arg line="-I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/Headers"/>
+      <arg line="-I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers"/>
+      <arg line="-I/System/Library/Frameworks/JavaVM.framework/Headers"/>
+      <arg line="${src}/nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.c"/>
+      <arg line="-Dmacintosh"/>
+      <arg line="-DuseCarbon=1"/>
+    </exec>
+    
+    <move file="libsendpraat.so" tofile="${src}/nzilbb/jsendpraat/libsendpraat${os.name}${os.arch}.so" />
+  </target>
+  
+  <target name="dist" depends="compile"
+          description="generate the distribution" >
+    <!-- Create the distribution directory -->
+    <mkdir dir="${dist}"/>
+    
+    <!-- Put everything in ${build} into the ${ant.project.name}.jar file -->
+    <jar jarfile="${dist}/${ant.project.name}.jar" 
+	 basedir="${build}">
+      <manifest>
+	<attribute name="Main-Class" value="${mainclass}"/>
+	<attribute name="Application-Name" value="${ant.project.description}"/>
+	<attribute name="Permissions" value="all-permissions"/>
+	<attribute name="Codebase" value="*"/>
+	<attribute name="Caller-Allowable-Codebase" value="*"/>
+      </manifest>
+      
+      <!-- include native libraries -->
+      <fileset dir="${src}" includes="nz/ac/canterbury/ling/praat/libsendpraat*" />
+
+      <!-- include source code -->
+      <fileset dir="${src}" includes="${srcfiles} nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.*" />
+      <!-- include this build file -->
+      <fileset dir="." includes="build.xml" />
+      
+    </jar>
+    <signjar jar="${dist}/${ant.project.name}.jar" 
+	     alias="${key.alias}"
+	     keystore="${key.keystore}"
+	     storetype="${key.storetype}"
+	     storepass="${key.storepass}"
+	     keypass="${key.keypass}"
+	     tsaurl="${key.tsaurl}"
+	     />
+    <chmod file="${dist}/${ant.project.name}.jar" perm="u+rx"/>    
+    <delete dir="${build}"/>
+  </target>
+  
+  <target name="clean" description="clean up" >
+    <!-- Delete the ${build} and ${dist} directory trees -->
+    <delete dir="${build}"/>
+    <delete file="${dist}/${ant.project.name}.jar"/>
+  </target>
+</project>
