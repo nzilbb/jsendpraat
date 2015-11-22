@@ -4,10 +4,10 @@
   <!-- set global properties for this build -->
   <property name="src"   location="."/>
   <property name="build" location="build_${ant.project.name}"/>
-  <property name="dist"  location="dist"/>
+  <property name="dist"  location="bin"/>
   <property name="srcfiles" value="nzilbb/jsendpraat/SendPraat.java nzilbb/http/IMessageHandler.java nzilbb/http/IProgressIndicator.java nzilbb/http/HttpRequestPostMultipart.java nzilbb/http/RequestCancelledException.java nzilbb/http/TemporaryFileStore.java nzilbb/http/FileDownloader.java org/json/**/*.java"/>
   <property name="mainclass" value="nzilbb.jsendpraat.SendPraat"/>
-  <xmlproperty file="/secret/location/key.xml" />
+  <xmlproperty file="${user.home}/key.xml" />
   
   <target name="init">
     <!-- Create the time stamp -->
