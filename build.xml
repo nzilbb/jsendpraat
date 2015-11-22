@@ -7,7 +7,7 @@
   <property name="dist"  location="dist"/>
   <property name="srcfiles" value="nzilbb/jsendpraat/SendPraat.java nzilbb/http/IMessageHandler.java nzilbb/http/IProgressIndicator.java nzilbb/http/HttpRequestPostMultipart.java nzilbb/http/RequestCancelledException.java nzilbb/http/TemporaryFileStore.java nzilbb/http/FileDownloader.java org/json/**/*.java"/>
   <property name="mainclass" value="nzilbb.jsendpraat.SendPraat"/>
-  <xmlproperty file="/var/lib/tomcat7/webapps/labbcat/WEB-INF/classes/key.xml" />
+  <xmlproperty file="/secret/location/key.xml" />
   
   <target name="init">
     <!-- Create the time stamp -->
