@@ -21,3 +21,21 @@ nzilbb.jsendpraat.SendPraat sp = new nzilbb.jsendpraat.SendPraat();
 ...
 sp.sendpraat("Praat", "Quit");
 ```
+
+This implementation also works as a Chrome Native Messaging Host - it can be started from the command line, and accepts messages on stdin using Chrome's Native Messaging protocol. Operating in this mode, two extra functions are supported:
+* Praat commands can include URLs, which are automatically downloaded to a local file and the local file name substituted into the command before execution.
+* In addition to sendpraat commands, files that have been downloaded can be re-uploaded, so TextGrids can be downloaded, edited by the user, and then re-uploaded.  The format for upload messages is:
+```
+    {
+        "message" : "upload", 
+        "sendpraat" : [
+           "praat",
+           "select TextGrid " + *nameInPraat*, // name of a textgrid object in Praat
+           "Write to text file... " + *fileUrl* // original URL of the downloaded file
+        ], 
+        "uploadUrl" : *uploadUrl*, // URL to upload to
+        "fileParameter" : *fileParameter*, // name of file HTTP parameter
+        "fileUrl" : *fileUrl*, // original URL of the downloaded file
+        "otherParameters" : *otherParameters* // extra HTTP request parameters
+    }
+```
