@@ -23,7 +23,16 @@ sp.sendpraat("Praat", "Quit");
 ```
 
 This implementation also works as a Chrome Native Messaging Host - it can be started from the command line, and accepts messages on stdin using Chrome's Native Messaging protocol. Operating in this mode, two extra functions are supported:
-* Praat commands can include URLs, which are automatically downloaded to a local file and the local file name substituted into the command before execution.
+* Praat commands can include URLs, which are automatically downloaded to a local file and the local file name substituted into the command before execution. The format for a message is:
+```
+    {
+       "message" : "sendpraat"
+       "sendpraat" : [
+         "praat",
+         "Quit"
+       ]
+    }
+```
 * In addition to sendpraat commands, files that have been downloaded can be re-uploaded, so TextGrids can be downloaded, edited by the user, and then re-uploaded.  The format for upload messages is:
 ```
     {
