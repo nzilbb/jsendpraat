@@ -30,12 +30,12 @@ This implementation also works as a Chrome Native Messaging Host - it can be sta
         "message" : "upload", 
         "sendpraat" : [
            "praat",
-           "select TextGrid " + *nameInPraat*, // name of a textgrid object in Praat
-           "Write to text file... " + *fileUrl* // original URL of the downloaded file
+           "select TextGrid " + nameInPraat, // name of a textgrid object in Praat
+           "Write to text file... " + fileUrl // original URL of the downloaded file
         ], 
-        "uploadUrl" : *uploadUrl*, // URL to upload to
-        "fileParameter" : *fileParameter*, // name of file HTTP parameter
-        "fileUrl" : *fileUrl*, // original URL of the downloaded file
-        "otherParameters" : *otherParameters* // extra HTTP request parameters
+        "uploadUrl" : uploadUrl, // URL to upload to
+        "fileParameter" : fileParameter, // name of file HTTP parameter
+        "fileUrl" : fileUrl, // original URL of the downloaded file
+        "otherParameters" : otherParameters // extra HTTP request parameters
     }
 ```
