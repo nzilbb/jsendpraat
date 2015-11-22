@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project name="jsendpraat" default="dist" basedir=".">
+<project name="jsendpraat" default="chromeextension" basedir=".">
   <description>Java implemetation for sendpraat</description>
   <!-- set global properties for this build -->
   <property name="src"   location="."/>
   <property name="build" location="build_${ant.project.name}"/>
   <property name="dist"  location="bin"/>
+  <property name="lib"   location="lib"/>
   <property name="srcfiles" value="nzilbb/jsendpraat/SendPraat.java nzilbb/http/IMessageHandler.java nzilbb/http/IProgressIndicator.java nzilbb/http/HttpRequestPostMultipart.java nzilbb/http/RequestCancelledException.java nzilbb/http/TemporaryFileStore.java nzilbb/http/FileDownloader.java org/json/**/*.java"/>
   <property name="mainclass" value="nzilbb.jsendpraat.SendPraat"/>
+  <property name="installermainclass" value="nzilbb.jsendpraat.chrome.HostInstaller"/>
+  <property name="installerdescription" value="Install Praat Integration"/>
+  <property name="installericon" value="HostInstaller.png"/>
+  <property name="chromesrc" location="nzilbb/jsendpraat/chrome"/>
+  <property name="chromepem" value="${user.home}/jsendpraat.pem"/>
   <xmlproperty file="${user.home}/key.xml" />
   
   <target name="init">
@@ -100,6 +106,58 @@
 	     />
     <chmod file="${dist}/${ant.project.name}.jar" perm="u+rx"/>    
     <delete dir="${build}"/>
+  </target>
+  <target name="hostinstaller" depends="dist"
+	  description="package the jsendpraat native messaging host installer">
+    <mkdir dir="${build}/install"/>
+    <javac srcdir="${src}" destdir="${build}/install"
+	   classpath="${lib}/jRegistryKey.jar"
+	   includes="nzilbb/jsendpraat/chrome/HostInstaller.java"
+	   listfiles="yes"
+	   includeantruntime="false"
+	   target="6"
+	   source="6"
+	   debug="on"
+	   >
+      <compilerarg value="-Xlint"/>
+    </javac>
+    <jar jarfile="${dist}/install-${ant.project.name}.jar" 
+	 basedir="${build}/install">
+      <manifest>
+	<attribute name="Main-Class" value="${installermainclass}"/>
+	<attribute name="Application-Name" value="${installerdescription}"/>
+	<attribute name="Permissions" value="all-permissions"/>
+	<attribute name="Codebase" value="*"/>
+	<attribute name="Caller-Allowable-Codebase" value="*"/>
+      </manifest>
+      <zipfileset dir="${src}/nzilbb/jsendpraat/chrome" includes="nzilbb.chrome.jsendpraat.json jsendpraat.sh jsendpraat.bat" prefix="" />
+      <zipfileset dir="${dist}" includes="jsendpraat.jar" prefix="" />
+      <fileset dir="${src}" includes="/nzilbb/jsendpraat/chrome/${installericon}" />
+      <!-- jRegistryKey stuff -->
+      <fileset dir="${lib}" includes="jRegistryKey.dll" />
+      <zipfileset src="${lib}/jRegistryKey.jar" includes="ca/**" />
+    </jar>
+    <signjar jar="${dist}/install-${ant.project.name}.jar" 
+	     alias="${key.alias}"
+	     keystore="${key.keystore}"
+	     storetype="${key.storetype}"
+	     storepass="${key.storepass}"
+	     keypass="${key.keypass}"
+	     tsaurl="${key.tsaurl}"
+	     />
+    <chmod file="${dist}/install-${ant.project.name}.jar" perm="u+rx"/>    
+    <delete dir="${build}"/>    
+  </target>
+
+  <target name="chromeextension" depends="hostinstaller"
+	  description="package the jsendpraat chrome extension">
+    <copy file="${chromepem}" tofile="${chromesrc}/key.pem" />
+    <copy file="${dist}/install-${ant.project.name}.jar" tofile="${chromesrc}/install-${ant.project.name}.jar" />
+    <zip zipfile="${dist}/${ant.project.name}.zip" 
+	 basedir="${chromesrc}">
+    </zip>
+    <delete file="${chromesrc}/key.pem"/>
+    <delete file="${chromesrc}/install-${ant.project.name}.jar"/>
   </target>
   
   <target name="clean" description="clean up" >
