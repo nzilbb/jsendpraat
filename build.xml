@@ -130,7 +130,7 @@
 	<attribute name="Codebase" value="*"/>
 	<attribute name="Caller-Allowable-Codebase" value="*"/>
       </manifest>
-      <zipfileset dir="${src}/nzilbb/jsendpraat/chrome" includes="nzilbb.chrome.jsendpraat.json jsendpraat.sh jsendpraat.bat" prefix="" />
+      <zipfileset dir="${src}/nzilbb/jsendpraat/chrome" includes="nzilbb.jsendpraat.chrome.json jsendpraat.sh jsendpraat.bat" prefix="" />
       <zipfileset dir="${dist}" includes="jsendpraat.jar" prefix="" />
       <fileset dir="${src}" includes="/nzilbb/jsendpraat/chrome/${installericon}" />
       <!-- jRegistryKey stuff -->
