@@ -19,36 +19,56 @@
 //    along with jsendpraat; if not, write to the Free Software
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
+
+var debug = false;
+
+// host version checking
 var hostVersion = null;
-var hostVersionMin = "20151028.1857";
+var hostVersionMin = "20151125.1824";
+
+// host communication
 var praatPort = null;
 var praatPortHasNeverInitialised = true;
-var lastContent = null;
+
+// track the tab that the current page action popup is about
+var pageActionTabId = null;
 var lastPageUrl = null;
-var tabMedia = {};
+
+// track media on each tab, so we can keep the page action popup up-to-date when they change tabs
+var tabMedia = {}; // key = page URL
+
+// track the content.js/popup.js connections, so we can pass back updates from
+var callbackPort = {}; // key = callbackId, generally the tab ID (or "popup")
 
 chrome.runtime.onConnect.addListener(
-    function(content) 
+    function(port) 
     {
-	content.onMessage.addListener(
+	// make sure they can be called back by sendpraat
+	if (port.sender.tab) {
+	    port.callbackId = String(port.sender.tab.id);
+	} else {
+	    port.callbackId = "popup";
+	}
+	callbackPort[port.callbackId] = port;
+
+	// react to messages
+	port.onMessage.addListener(
 	    function(msg) 
 	    {
 		if (msg.message == "activateAudioTags") {
-		    console.log("activate " + msg.urls);
+		    if (debug) console.log("activate " + msg.urls);
 		    // register this media for this url
-		    tabMedia[content.sender.url] = msg.urls;
-		    updatePageAction(content.sender.tab.id);
-		}
-		else if (msg.message == "sendpraat") {
-		    console.log("sendpraat " + msg.sendpraat);
-		    lastContent = content;
+		    tabMedia[port.sender.url] = msg.urls;
+		    updatePageAction(port.sender.tab.id);
+		} else if (msg.message == "sendpraat") {
+		    if (debug) console.log("sendpraat " + msg.sendpraat);
 		    checkPraatPort();
+		    msg.clientRef = port.callbackId;
 		    praatPort.postMessage(msg);
-		}
-		else if (msg.message == "upload") {
-		    console.log("upload " + msg.fileUrl + " to " + msg.uploadUrl);
-		    lastContent = content;
+		} else if (msg.message == "upload") {
+		    if (debug) console.log("upload " + msg.fileUrl + " to " + msg.uploadUrl);
 		    checkPraatPort();
+		    msg.clientRef = port.callbackId;
 		    praatPort.postMessage(msg);
 		}
 	    });
@@ -60,6 +80,7 @@ chrome.tabs.onActivated.addListener(
     });
 
 function updatePageAction(tabId) {
+    pageActionTabId = tabId;
     chrome.tabs.get(tabId, 
 		    function(tab) {
 			lastPageUrl = tab.url;
@@ -87,11 +108,11 @@ function checkPraatPort() {
 		    }
 		}
 	    } else {
-		console.log("nzilbb.jsendpraat.chrome: Received " + msg.code);
-		if (lastContent) 
+		if (debug) console.log("nzilbb.jsendpraat.chrome: Received " + msg.code + " for " + msg.clientRef);
+		if (msg.clientRef) 
 		{ // reply to the last message port
 		    praatPortHasNeverInitialised = false;
-		    try { lastContent.postMessage(msg); } catch(x) {}
+		    try { callbackPort[msg.clientRef].postMessage(msg); } catch(x) {}
 		}
 	    }
 	});

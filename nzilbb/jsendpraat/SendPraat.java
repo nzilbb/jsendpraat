@@ -84,6 +84,7 @@ import nzilbb.http.HttpRequestPostMultipart;
  *        "fileParameter" : <var>fileParameter</var>, // name of file HTTP parameter
  *        "fileUrl" : <var>fileUrl</var>, // original URL of the downloaded file
  *        "otherParameters" : <var>otherParameters</var> // extra HTTP request parameters
+ *        "clientRef" : <var>reference</var> // an optional reference string that's passed back to the client
  *    }
  *  </pre></li>
  * </ul>
@@ -513,7 +514,8 @@ public class SendPraat
     *   "sendpraat" : [
     *     "praat",
     *     "Quit"
-    *   ]
+    *   ],
+    *   "clientRef" : "it's me"
     * }
     * </pre>
     * <p>In addition to sendpraat commands, files that have been downloaded can be re-uploaded, 
@@ -530,6 +532,7 @@ public class SendPraat
     *        "fileParameter" : <var>fileParameter</var>, // name of file HTTP parameter
     *        "fileUrl" : <var>fileUrl</var>, // original URL of the downloaded file
     *        "otherParameters" : <var>otherParameters</var> // extra HTTP request parameters
+    *        "clientRef" : <var>reference</var> // an optional reference string that's passed back to the client
     *    }
     *  </pre>
     * <p>The response is written in JSON to stdout (prefixed by a 4-byte message size indicator)
@@ -542,6 +545,7 @@ public class SendPraat
     *                   e.g. the URL passed for "fileUrl" does not correspond to a file that was
     *                   already downloaded.</dd>
     *  <dt>500</dt> <dd>No arguments were passed</dd>
+    *  <dt>600</dt> <dd>There was an IO error during the download processing</dd>
     *  <dt>700</dt> <dd>There was an IO error during the upload request processing</dd>
     *  <dt>800</dt> <dd>The upload request included a malformed URL</dd>
     *  <dt>900</dt> <dd>The incoming message could not be parsed as JSON</dd>
@@ -570,14 +574,19 @@ public class SendPraat
 	    String strMessage = new String(bMessage);
 	    log("Message: " + strMessage);
 	    JSONObject jsonReply = new JSONObject("{ \"message\":\"sendpraat\", \"error\":\"Invalid message\", \"code\":999}");
+	    String clientRef = null;
 	    try
 	    {
 	       // parse JSON
 	       JSONObject jsonMessage = new JSONObject(strMessage);
+	       if (jsonMessage.has("clientRef"))
+	       {
+		  clientRef = jsonMessage.getString("clientRef");
+	       }
 	       if ("version".equals(jsonMessage.getString("message")))
 	       {
 		  jsonReply.put("message", "version");
-		  jsonReply.put("version", "20151028.1857");
+		  jsonReply.put("version", "20151125.1824");
 		  jsonReply.remove("error");
 		  jsonReply.put("code", 0);
 	       }
@@ -600,7 +609,7 @@ public class SendPraat
 		     for (int i = 0; i < argv.length; i++)
 		     {
 			// download any HTTP URLs to local files...
-			argv[i] = convertHttpToLocal(jsonArguments.getString(i), stdout);
+			argv[i] = convertHttpToLocal(jsonArguments.getString(i), stdout, clientRef);
 		     } // next arguments
 		     String reply = sendpraat(argv);
 		     jsonReply.put("error", reply);
@@ -626,7 +635,16 @@ public class SendPraat
 	       jsonReply.put("error", exception.toString());
 	       jsonReply.put("code", 900);
 	    }
-	    
+	    catch(Exception exception)
+	    {
+	       logError("Error: " + exception);
+	       jsonReply.put("error", exception.getMessage());
+	       jsonReply.put("code", 600);
+	    }
+	    if (clientRef != null)
+	    {
+	       jsonReply.put("clientRef", clientRef);
+	    }
 	    // reply to message
 	    String reply = jsonReply.toString();
 	    log("reply: " + reply);
@@ -653,9 +671,12 @@ public class SendPraat
     * Converts all http:// and https:// URLs in the given string to local file paths, by downloading the content to a local file.
     * @param s The command to convert.
     * @param stdout For reporting progress.
+    * @param clientRef Reference to pass back to the client on progress updates.
     * @return The given string, with all HTTP URLs converted to local paths where possible.
+    * @throws Exception If something goes wrong during download.
     */
-   public String convertHttpToLocal(String s, final DataOutputStream stdout)
+   public String convertHttpToLocal(String s, final DataOutputStream stdout, final String clientRef)
+      throws Exception
    {
       Matcher httpUrlMatcher = httpUrlPattern.matcher(s);
       StringBuffer newS = new StringBuffer();
@@ -667,108 +688,104 @@ public class SendPraat
 	 newS.append(s.substring(position, httpUrlMatcher.start()));
 	 File file = null;
 	 URL url = null;
-	 try
-	 {
-	    url = new URL(httpUrlMatcher.group());
-	    log("Fetching " + url);
-	    
-	    FileDownloader downloader = new FileDownloader(
-	       url, new IProgressIndicator()
+	 url = new URL(httpUrlMatcher.group());
+	 log("Fetching " + url);
+	 
+	 FileDownloader downloader = new FileDownloader(
+	    url, new IProgressIndicator()
+	       {
+		  int maximum = 100;
+		  public int getMaximum() { return maximum; }
+		  public void setMaximum(int newMaximum) { maximum = newMaximum; reportProgress(); }
+		  int value = 0;
+		  public int getValue() { return value; }
+		  public void setValue(int newValue) 
+		  { 
+		     // only report report progress every 5%, so as not to flood the caller
+		     // ...more than 5% chunk
+		     boolean report = (Math.abs(newValue - value) * 100) / maximum > 5 
+			// or little chunks, and we've reached a 5% multiple
+			|| ((newValue * 100) / maximum % 5 == 0 
+			    && (value * 100) / maximum % 5 != 0)
+			// or if we reach the end (or beginning)
+			|| newValue == maximum || newValue == 0;
+		     value = newValue; 
+		     if (report) reportProgress(); 
+		  }
+		  String string = "";
+		  public String getString() { return string; }
+		  public void setString(String newString) 
+		  { 
+		     boolean report = !newString.equals(string);
+		     string = newString; 
+		     if (report) reportProgress(); 
+		  }
+		  void reportProgress()
 		  {
-		     int maximum = 100;
-		     public int getMaximum() { return maximum; }
-		     public void setMaximum(int newMaximum) { maximum = newMaximum; reportProgress(); }
-		     int value = 0;
-		     public int getValue() { return value; }
-		     public void setValue(int newValue) 
-		     { 
-			// only report report progress every 5%, so as not to flood the caller
-			// ...more than 5% chunk
-			boolean report = (Math.abs(newValue - value) * 100) / maximum > 5 
-			   // or little chunks, and we've reached a 5% multiple
-			   || ((newValue * 100) / maximum % 5 == 0 
-			       && (value * 100) / maximum % 5 != 0)
-			   // or if we reach the end (or beginning)
-			   || newValue == maximum || newValue == 0;
-			value = newValue; 
-			if (report) reportProgress(); 
-		     }
-		     String string = "";
-		     public String getString() { return string; }
-		     public void setString(String newString) 
-		     { 
-			boolean report = !newString.equals(string);
-			string = newString; 
-			if (report) reportProgress(); 
-		     }
-		     void reportProgress()
+		     JSONObject json = new JSONObject();
+		     json.put("message", "progress");
+		     json.put("maximum", maximum);
+		     json.put("value", value);
+		     json.put("string", string);
+		     if (clientRef != null) json.put("clientRef", clientRef);
+		     String reply = json.toString();
+		     log("progress: " + reply);
+		     try
 		     {
-			JSONObject json = new JSONObject();
-			json.put("message", "progress");
-			json.put("maximum", maximum);
-			json.put("value", value);
-			json.put("string", string);
-			String reply = json.toString();
-			log("progress: " + reply);
-			try
-			{
-			   byte[] replyBuffer = reply.getBytes("UTF-8");
-			   ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
-			   replySizeBuffer.putInt(replyBuffer.length);
-			   stdout.write(replySizeBuffer.array(), 0, 4);
-			   stdout.write(replyBuffer, 0, replyBuffer.length);			
-			}
-			catch(UnsupportedEncodingException exception)
-			{
-			   logError(exception.toString());
-			}
-			catch(IOException exception)
-			{
-			   logError(exception.toString());
-			}
+			byte[] replyBuffer = reply.getBytes("UTF-8");
+			ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
+			replySizeBuffer.putInt(replyBuffer.length);
+			stdout.write(replySizeBuffer.array(), 0, 4);
+			stdout.write(replyBuffer, 0, replyBuffer.length);			
 		     }
-		  }, 
-	       new IMessageHandler()
-	       {
-		  public void message(String s) { log(s); }
-		  public void error(String s) { logError(s); }
-	       });
-	    synchronized (downloader)
+		     catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
+		     catch(IOException exception) { logError(exception.toString()); }
+		  }
+	       }, 
+	    new IMessageHandler()
 	    {
-	       try
-	       {
-		  downloader.start();
-		  downloader.wait();
+	       public void message(String s) { log(s); }
+	       public void error(String s) 
+	       { 		     
+		  logError(s); 
 		  
-		  // set the local file for Praat
-		  file = downloader.getLocalFile();
-		  if (file == null)
+		  // send error back to client too
+		  JSONObject json = new JSONObject();
+		  json.put("message", "progress");
+		  json.put("error", s);
+		  json.put("code", 600);
+		  if (clientRef != null) json.put("clientRef", clientRef);
+		  String reply = json.toString();
+		  try
 		  {
-		     logError("Download of " + url + " failed.");
+		     byte[] replyBuffer = reply.getBytes("UTF-8");
+		     ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
+		     replySizeBuffer.putInt(replyBuffer.length);
+		     stdout.write(replySizeBuffer.array(), 0, 4);
+		     stdout.write(replyBuffer, 0, replyBuffer.length);			
 		  }
-		  else
-		  {
-		     log("Local file: " + file.getPath());
-		  }
+		  catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
+		  catch(IOException exception) { logError(exception.toString()); }
 	       }
-	       catch(java.lang.InterruptedException exception)
-	       {
-		  logError(exception.getClass().getName() + ": " + exception.getMessage());
-	       }
-	       catch(java.lang.NullPointerException npe)
-	       {
-		  logError("Download cancelled");
-	       }		  
-	       catch(java.lang.Throwable t)
-	       {
-		  logError("ERROR: " + t);
-	       }		  
-	    } // synchronized
-	 }
-	 catch(MalformedURLException exception)
+	    });
+	 synchronized (downloader)
 	 {
-	    logError(exception.toString());
-	 }
+	    downloader.start();
+	    downloader.wait();
+	    
+	    // set the local file for Praat
+	    file = downloader.getLocalFile();
+	    if (file == null)
+	    {
+	       logError("Download of " + url + " failed.");
+	       throw new Exception(downloader.getLastError()!=null?downloader.getLastError()
+				   :"Download of " + url + " failed.");
+	    }
+	    else
+	    {
+	       log("Local file: " + file.getPath());
+	    }
+	 } // synchronized
 	 if (file != null && file.exists())
 	 {
 	    newS.append(file.getPath());

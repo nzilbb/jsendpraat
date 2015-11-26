@@ -24,9 +24,22 @@ var background = chrome.runtime.connect({name: "popup"});
 background.onMessage.addListener(
     function(msg) 
     {
-	if (msg.message == "progress")
-	{
-	    console.log("Progress " + msg.string + " " + Math.floor(msg.value * 100 / msg.maximum) + "%");
+	if (msg.message == "progress") {
+	    var progress = document.getElementById("progress");
+	    progress.style.display = "";
+	    progress.title = msg.string;
+	    try { progress.value = Math.floor(msg.value * 100 / msg.maximum); } catch(x) {}
+	}
+	var progressMessage = document.getElementById("progressMessage");
+	progressMessage.style.display = "";
+	if (msg.error) {
+	    progressMessage.classList.add("error");
+	    progressMessage.innerHTML = msg.error;
+	    progressMessage.title = msg.error;
+	} else if (msg.string) {
+	    progressMessage.classList.remove("error");
+	    progressMessage.innerHTML = msg.string;
+	    progressMessage.title = msg.string;
 	}
     });
 
@@ -35,15 +48,30 @@ document.addEventListener('DOMContentLoaded', function () {
     var urls = background.tabMedia[background.lastPageUrl];
     for (u in urls)
     {
-	console.log("u " + u + " " + urls[u]);
-        var li = document.createElement("a");
-        li.className = "praaturl";
-	li.href = "#";
-        li.url = urls[u];
-        li.title = "Open in Praat";
-        li.onclick = function() { openInPraat(this.url); };
-	li.appendChild(document.createTextNode(urls[u]));
-        praatMediaList.appendChild(li);
+        var div = document.createElement("div");
+	div.className = "media"
+
+        var save = document.createElement("a");
+        save.className = "save";
+        save.download = urls[u].replace(/.*\//, "");
+	save.href = urls[u];
+        save.title = "Save";
+        var img = document.createElement("img");
+	img.src = "document-save.png";
+	save.appendChild(img);
+        div.appendChild(save);
+
+        var praat = document.createElement("a");
+        praat.className = "praaturl";
+	praat.href = "#";
+        praat.url = urls[u];
+        praat.title = "Open in Praat";
+        praat.onclick = function() { openInPraat(this.url); };
+	praat.appendChild(document.createTextNode(urls[u]));
+        div.appendChild(praat);
+
+        praatMediaList.appendChild(div);
+
     } // next url
 });
 function openInPraat(url)

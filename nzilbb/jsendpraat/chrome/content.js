@@ -20,6 +20,8 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
+var debug = false;
+
 // content script for adding Praat related elements to the page
 
 window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
@@ -27,8 +29,8 @@ window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFile
 var background = chrome.runtime.connect({name: "content"});
 background.onMessage.addListener(
     function(msg) {
-	console.log("message " + msg.message);
-	if (msg.message == "progress") {
+	if (debug) console.log("message " + msg.message);
+	if (msg.message == "progress" && debug) {
 	    console.log("Progress " + msg.string + " " + Math.floor(msg.value * 100 / msg.maximum) + "%");
 	}
 	msg.type = "FROM_PRAAT_EXTENSION";

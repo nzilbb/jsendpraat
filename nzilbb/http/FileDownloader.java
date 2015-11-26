@@ -105,6 +105,25 @@ public class FileDownloader
     * @return Whether the downloader is currently downloading or not
     */
    public boolean getDownloading() { return bDownloading; }
+
+   
+   /**
+    * Last error that occurred.
+    * @see #getLastError()
+    * @see #setLastError(String)
+    */
+   protected String lastError;
+   /**
+    * Getter for {@link #lastError}: Last error that occurred.
+    * @return Last error that occurred.
+    */
+   public String getLastError() { return lastError; }
+   /**
+    * Setter for {@link #lastError}: Last error that occurred.
+    * @param newLastError Last error that occurred.
+    */
+   public void setLastError(String newLastError) { lastError = newLastError; }
+
       
    /**
     * Constructor
@@ -218,7 +237,17 @@ public class FileDownloader
 	       if (localFile_ == null || !localFile_.exists())
 	       {		     
 		  URLConnection cnxn = openConnection(url_);
-		  if (cnxn == null) throw new Exception("Cancelled username/password entry");
+		  if (cnxn == null)
+		  {
+		     if (lastError != null)
+		     {
+			throw new Exception(lastError);
+		     }
+		     else
+		     {
+			throw new Exception("Could not retrieve: " + url_);
+		     }
+		  }
 		  int contentLength = cnxn.getContentLength();
 		  if (contentLength < 0) contentLength = 1000000;
 		  if (pb_ != null)
@@ -309,12 +338,13 @@ public class FileDownloader
 	    }
 	    catch(Exception exception)
 	    {
-	       if (messageHandler_ != null) messageHandler_.error(exception.getClass().getName() + ": " + exception.getMessage());
+	       if (messageHandler_ != null) messageHandler_.error(exception.getMessage());
+	       setLastError(exception.getMessage());
 	       if (pb_ != null)
 	       {
-		  pb_.setString("Download cancelled");
+		  pb_.setString(exception.getMessage());
 	       }
-	       localFile_.delete();
+	       if (localFile_ != null) localFile_.delete();
 	    }
 	    finally
 	    {
@@ -431,6 +461,10 @@ public class FileDownloader
 	       }
 	    } // next attempt
 	 } // HTTP_UNAUTHORIZED returned
+	 else
+	 {
+	    setLastError(x.getMessage());
+	 }
       } // exception getting content
       return null;
    } // end of openConnection()

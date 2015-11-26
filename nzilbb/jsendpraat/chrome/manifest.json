@@ -1,6 +1,6 @@
 {
     "name": "Praat Integration",
-    "version": "0.60",
+    "version": "0.70",
     "manifest_version": 2,
     "description": "Allows Praat to open media on a page",
     "icons": {
@@ -32,6 +32,6 @@
     ],
     "author": "Robert Fromont",
     "permissions": [
-	"nativeMessaging", "tabs"
+	"tabs", "nativeMessaging"
     ]
 }
