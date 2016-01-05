@@ -1,6 +1,6 @@
 # jsendpraat
 
-Java implementation of sendpraat, which can also function as a Chrome Native Messaging Host, for communication with a Chrome extension.
+Java implementation of sendpraat, which can also function as a Chrome Native Messaging Host, for communication with a Chrome extension (the code for which is here, and the packaged extension is available here: https://chrome.google.com/webstore/detail/praat-integration/hmmnebkieionilgpepijmfabdickmnig ).
 
 This implementation tries to load and run JNI native libraries for executing sendpraat compiled from original C code.  Failing that, it looks for and runs the sendpraat standalone program, which  must be installed in the same folder as the praat program. Failing that, it attempts to use a pure-java implementation of sendpraat, which uses signals and only works on Linux.
 
