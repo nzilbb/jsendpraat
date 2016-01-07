@@ -57,9 +57,11 @@ chrome.runtime.onConnect.addListener(
 	    {
 		if (msg.message == "activateAudioTags") {
 		    if (debug) console.log("activate " + msg.urls);
-		    // register this media for this url
-		    tabMedia[port.sender.url] = msg.urls;
-		    updatePageAction(port.sender.tab.id);
+		    if (msg.urls.length > 0) {
+			// register this media for this url
+			tabMedia[port.sender.url] = msg.urls;
+			updatePageAction(port.sender.tab.id);
+		    }
 		} else if (msg.message == "sendpraat") {
 		    if (debug) console.log("sendpraat " + msg.sendpraat);
 		    checkPraatPort();

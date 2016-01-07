@@ -20,32 +20,56 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
+// BROWSER-SPECIFIC CODE:
+
 var background = chrome.runtime.connect({name: "popup"});
-background.onMessage.addListener(
-    function(msg) 
-    {
-	if (msg.message == "progress") {
-	    var progress = document.getElementById("progress");
-	    progress.style.display = "";
-	    progress.title = msg.string;
-	    try { progress.value = Math.floor(msg.value * 100 / msg.maximum); } catch(x) {}
-	}
-	var progressMessage = document.getElementById("progressMessage");
-	progressMessage.style.display = "";
-	if (msg.error) {
-	    progressMessage.classList.add("error");
-	    progressMessage.innerHTML = msg.error;
-	    progressMessage.title = msg.error;
-	} else if (msg.string) {
-	    progressMessage.classList.remove("error");
-	    progressMessage.innerHTML = msg.string;
-	    progressMessage.title = msg.string;
-	}
-    });
+background.onMessage.addListener(messageHandler);
 
 document.addEventListener('DOMContentLoaded', function () {
     var background = chrome.extension.getBackgroundPage();
     var urls = background.tabMedia[background.lastPageUrl];
+    listMedia(urls);
+}
+
+function sendpraat(script)
+{
+    background.postMessage(
+	{
+	    "message" : "sendpraat", 
+	    "sendpraat" : script
+	});
+}
+
+// CROSS-BROWSER CODE:
+
+function messageHandler(msg) {
+    var progressMessage = document.getElementById("progressMessage");
+    progressMessage.style.display = "";
+    if (msg.error) {
+	progressMessage.classList.add("error");
+	progressMessage.innerHTML = msg.error;
+	progressMessage.title = msg.error;
+    } else if (msg.string) {
+	progressMessage.classList.remove("error");
+	progressMessage.innerHTML = msg.string;
+	progressMessage.title = msg.string;
+    }
+
+    switch (msg.message) {
+    case "progress":
+	var progress = document.getElementById("progress");
+	progress.style.display = "";
+	progress.title = msg.string;
+	try { progress.value = Math.floor(msg.value * 100 / msg.maximum); } catch(x) {}
+	break;
+    case "list": 
+	var urls = msg.urls;
+	listMedia(urls);
+	break;
+    }
+}
+
+function listMedia(urls) {
     for (u in urls)
     {
         var div = document.createElement("div");
@@ -80,11 +104,3 @@ function openInPraat(url)
     sendpraat(command);
 }
 
-function sendpraat(script)
-{
-    background.postMessage(
-	{
-	    "message" : "sendpraat", 
-	    "sendpraat" : script
-	});
-}

@@ -1,5 +1,5 @@
 //
-// Copyright 2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2016 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -20,22 +20,54 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
-var debug = false;
-
-// content script for adding Praat related elements to the page
-
-window.requestFileSystem  = window.requestFileSystem || window.webkitRequestFileSystem;
+// BROWSER-SPECIFIC CODE:
 
 var background = chrome.runtime.connect({name: "content"});
-background.onMessage.addListener(
-    function(msg) {
-	if (debug) console.log("message " + msg.message);
-	if (msg.message == "progress" && debug) {
-	    console.log("Progress " + msg.string + " " + Math.floor(msg.value * 100 / msg.maximum) + "%");
-	}
+
+function registerBackgroundMessageHandler(handler) {
+    background.onMessage.addListener(handler);
+}
+
+function postMessageToBackground(message) {
+    background.postMessage(message);
+}
+
+// CROSS-BROWSER CODE:
+
+var debug = false;
+
+// send a script to praat
+function sendpraat(script) {
+    postMessageToBackground({
+	"message" : "sendpraat", 
+	"sendpraat" : script
+    });
+}
+
+// upload a praat-edited TextGrid file to the server
+function upload(sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters) {
+    postMessageToBackground({
+	"message" : "upload", 
+	"sendpraat" : sendpraat, // script to run first
+	"uploadUrl" : uploadUrl, // URL to upload to
+	"fileParameter" : fileParameter, // name of file HTTP parameter
+	"fileUrl" : fileUrl, // original URL for the file to upload
+	"otherParameters" : otherParameters // extra HTTP request parameters
+    });
+}
+
+function activateAudioTags(urls) {
+    postMessageToBackground({
+	"message" : "activateAudioTags", 
+	"urls" : urls});
+}
+
+registerBackgroundMessageHandler(function(msg) {
+    if (msg.message == "progress") {
 	msg.type = "FROM_PRAAT_EXTENSION";
 	window.postMessage(msg, '*');
-    });
+    }
+});
 
 window.addEventListener("message", function(event) {
     // We only accept messages from ourselves
@@ -57,64 +89,41 @@ window.addEventListener("message", function(event) {
     } // FROM_PRAAT_PAGE
 }, false);
 
-function activateAudioTags(urls) {
-    background.postMessage({message: "activateAudioTags", urls: urls}, '*');
-}
-function openInPraat(url) {
-    var command = ["praat", "Read from file... " + url, "Edit"];
-    sendpraat(command);
-}
-
-function sendpraat(script) {
-    background.postMessage({
-	    "message" : "sendpraat", 
-	    "sendpraat" : script
-	});
-}
-
-function upload(sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters) {
-    background.postMessage({
-	    "message" : "upload", 
-	    "sendpraat" : sendpraat, // script to run first
-	    "uploadUrl" : uploadUrl, // URL to upload to
-	    "fileParameter" : fileParameter, // name of file HTTP parameter
-	    "fileUrl" : fileUrl, // original URL for the file to upload
-	    "otherParameters" : otherParameters // extra HTTP request parameters
-	});
-}
-
 // find all audio elements on the page
-var urls = [];
-var audioTags = document.getElementsByTagName("audio");
-for (a = 0; a < audioTags.length; a++) {
-    var audio = audioTags[a];
-    var sources = audio.getElementsByTagName("source");
-    for (s = 0; s < sources.length; s++) {
-	var source = sources[s];
-	if (source.type == "audio/wav"
-	    || source.src.search(/\.wav$/) >= 0)
-	{
-	    urls.push(source.src);
-	}
-    } // next <source>	    
-    for (s = 0; s < sources.length; s++) {
-	var source = sources[s];
-	if (source.type == "audio/flac"
-	    || source.src.search(/\.flac$/) >= 0)
-	{
-	    urls.push(source.src);
-	}
-    } // next <source>	    
-    for (s = 0; s < sources.length; s++) {
-	var source = sources[s];
-	if (source.type == "audio/mpeg"
-	    || source.src.search(/\.mp3$/) >= 0)
-	{
-	    urls.push(source.src);
-	}
-    } // next <source>	    
-} // next <audio>
-if (urls.length > 0) {
-    activateAudioTags(urls);
+function findAudioUrls() { // TODO add this to a library shared between extensions
+
+    // find all audio elements on the page
+    var urls = [];
+    var audioTags = document.getElementsByTagName("audio");
+    for (a = 0; a < audioTags.length; a++) {
+	var audio = audioTags[a];
+	var sources = audio.getElementsByTagName("source");
+	for (s = 0; s < sources.length; s++) {
+	    var source = sources[s];
+	    if (source.type == "audio/wav"
+		|| source.src.search(/\.wav$/) >= 0)
+	    {
+		urls.push(source.src);
+	    }
+	} // next <source>	    
+	for (s = 0; s < sources.length; s++) {
+	    var source = sources[s];
+	    if (source.type == "audio/flac"
+		|| source.src.search(/\.flac$/) >= 0)
+	    {
+		urls.push(source.src);
+	    }
+	} // next <source>	    
+	for (s = 0; s < sources.length; s++) {
+	    var source = sources[s];
+	    if (source.type == "audio/mpeg"
+		|| source.src.search(/\.mp3$/) >= 0)
+	    {
+		urls.push(source.src);
+	    }
+	} // next <source>	    
+    } // next <audio>
+    return urls;
 }
 
+activateAudioTags(findAudioUrls());
