@@ -1,0 +1,16 @@
+{
+  "title": "Praat Integration",
+  "name": "jsendpraat",
+  "version": "0.0.1",
+  "description": "Allows Praat to open media on a page",
+  "main": "index.js",
+  "author": "Robert Fromont, NZILBB",
+  "engines": {
+    "firefox": ">=38.0a1",
+    "fennec": ">=38.0a1"
+  },
+  "license": "GPL",
+  "keywords": [
+    "jetpack"
+  ]
+}
