@@ -65,8 +65,9 @@ import nzilbb.http.HttpRequestPostMultipart;
  * <p>If praat is not already running, a new praat process is started. If the praat program cannot
  * be found, the user is asked where it is.
  * <p>This class also works as a Chrome Native Messaging Host - it can be started from the command
- * line, and accepts messages on stdin using Chrome's Native Messaging protocol. Operating in this
- * mode, two extra functions are supported:
+ * line, and accepts messages on stdin using Chrome's 
+ * <a href="https://developer.chrome.com/extensions/nativeMessaging#native-messaging-host-protocol">Native Messaging protocol</a>. 
+ * Operating in this mode, two extra functions are supported:
  * <ul>
  *  <li>Praat commands can include URLs, which are automatically downloaded to a local file and
  *   the local file name substituted into the command before execution.</li>
@@ -503,14 +504,15 @@ public class SendPraat
    } // end of startPraat()
 
    /**
-    * Runs the message-handling loop for handling messages as a Chromium Native Messaging host.
+    * Runs the message-handling loop for handling messages as a 
+    * <a href="https://developer.chrome.com/extensions/nativeMessaging#native-messaging-host-protocol">Chromium Native Messaging</a> host.
     * <p>The loop reads JSON messages from stdin (prefixed by a 4-byte message size indicator)
     * and expects the JSON object to have a "sendpraat" attribute whose value is an array of
     * arguments that would be passed to sendpraat on the command line.
     * <p> e.g. 
     * <pre>
     * {
-    *   "message" : "sendpraat"
+    *   "message" : "sendpraat",
     *   "sendpraat" : [
     *     "praat",
     *     "Quit"
@@ -531,7 +533,7 @@ public class SendPraat
     *        "uploadUrl" : <var>uploadUrl</var>, // URL to upload to
     *        "fileParameter" : <var>fileParameter</var>, // name of file HTTP parameter
     *        "fileUrl" : <var>fileUrl</var>, // original URL of the downloaded file
-    *        "otherParameters" : <var>otherParameters</var> // extra HTTP request parameters
+    *        "otherParameters" : <var>otherParameters</var>, // extra HTTP request parameters
     *        "clientRef" : <var>reference</var> // an optional reference string that's passed back to the client
     *    }
     *  </pre>
@@ -653,6 +655,7 @@ public class SendPraat
 	    replySizeBuffer.putInt(replyBuffer.length);
 	    stdout.write(replySizeBuffer.array(), 0, 4);
 	    stdout.write(replyBuffer, 0, replyBuffer.length);
+	    stdout.flush();
 	 }
 	 catch(EOFException exception)
 	 {
@@ -665,6 +668,7 @@ public class SendPraat
 	 }
       } // next message
       log("Goodbye");
+      System.exit(0);
    } // end of chromiumHost()
    
    /**
@@ -737,6 +741,7 @@ public class SendPraat
 			replySizeBuffer.putInt(replyBuffer.length);
 			stdout.write(replySizeBuffer.array(), 0, 4);
 			stdout.write(replyBuffer, 0, replyBuffer.length);			
+			stdout.flush();
 		     }
 		     catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
 		     catch(IOException exception) { logError(exception.toString()); }
@@ -763,6 +768,7 @@ public class SendPraat
 		     replySizeBuffer.putInt(replyBuffer.length);
 		     stdout.write(replySizeBuffer.array(), 0, 4);
 		     stdout.write(replyBuffer, 0, replyBuffer.length);			
+		     stdout.flush();
 		  }
 		  catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
 		  catch(IOException exception) { logError(exception.toString()); }
