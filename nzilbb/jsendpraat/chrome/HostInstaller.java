@@ -59,7 +59,7 @@ import ca.beq.util.win32.registry.RootKey;
  * @author Robert Fromont robert.fromont@canterbury.ac.nz
  */
 @SuppressWarnings("serial")
-@UtilityDescription("Installer for Chrome/Praat integration Messaging Host")
+@UtilityDescription("Installer for Browser/Praat integration Messaging Host")
 public class HostInstaller
   extends UtilityApp
 {
@@ -124,7 +124,7 @@ public class HostInstaller
       getContentPane().setBackground(Color.WHITE);      
       ((JPanel)getContentPane()).setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-      add(new JLabel("This will install support for interacting with Praat directly from Chrome."));
+      add(new JLabel("This will install support for interacting with Praat directly from your web browser."));
       add(new JLabel("Please click 'Install' to continue."));
       add(progress);
       progress.setStringPainted(true);
@@ -187,7 +187,10 @@ public class HostInstaller
       {
 	 File homeDir = new File(userHome);
 	 
-	 File manifestDir = new File(homeDir, "jsendpraat");
+	 File binDir = new File(homeDir, "jsendpraat");
+	 binDir.mkdir();
+
+	 File manifestDir = binDir;	
 	 switch (os)
 	 {
 	    case Linux: 
@@ -199,7 +202,7 @@ public class HostInstaller
 		  browserConfigDir = new File(configDir, "google-chrome");
 		  if (!browserConfigDir.exists())
 		  {
-		     throw new Exception(
+		     message(
 			"Neither Google Chrome nor Chromium appear to be installed; " 
 			+ browserConfigDir.getPath() + " not found.");
 		  }
@@ -210,7 +213,6 @@ public class HostInstaller
 	    case Windows:
 	    {
 	       // we'll just leave it in ~\jsendpraat, but make sure it exists
-	       manifestDir.mkdir();
 	       break;
 	    }
 	    case Mac:
@@ -224,7 +226,7 @@ public class HostInstaller
 		  browserConfigDir = new File(googleDir, "Chrome");
 		  if (!browserConfigDir.exists())
 		  {
-		     throw new Exception(
+		     message(
 			"Neither Google Chrome nor Chromium appear to be installed; " 
 			+ browserConfigDir.getPath() + " not found.");
 		  }
@@ -243,7 +245,7 @@ public class HostInstaller
 	 // extract executable jar
 	 String hostJar = "jsendpraat.jar";
 	 message("Extracting: " + hostJar);
-	 File hostJarFile = new File(manifestDir, hostJar);
+	 File hostJarFile = new File(binDir, hostJar);
 	 URL hostJarUrl = getClass().getResource("/"+hostJar);
 	 InputStream jarStream = hostJarUrl.openStream();
 	 FileOutputStream outStream = new FileOutputStream(hostJarFile);
@@ -262,7 +264,7 @@ public class HostInstaller
 	 // extract/update execution script
 	 String hostScript = os == OS.Windows?"jsendpraat.bat":"jsendpraat.sh";
 	 message("Extracting: " + hostScript);
-	 File hostScriptFile = new File(manifestDir, hostScript);
+	 File hostScriptFile = new File(binDir, hostScript);
 	 URL hostScriptUrl = getClass().getResource("/"+hostScript);
 	 BufferedReader hostScriptReader = new BufferedReader(new InputStreamReader(hostScriptUrl.openStream()));
 	 PrintWriter hostScriptWriter = new PrintWriter(hostScriptFile);
