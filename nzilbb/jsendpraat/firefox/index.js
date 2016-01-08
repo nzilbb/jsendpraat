@@ -177,18 +177,25 @@ var hostProcess = null;
 function checkHost() {
     if (!hostProcess) {
 	var system = require("sdk/system");
-	var windows = system.platform.indexOf("win") >= 0;
+	var windows = system.platform.indexOf("win") == 0;
 	var homeDir = windows ? system.env.USERPROFILE : system.env.HOME;
 	var sep = windows ? "\\" : "/";
 
-	var cmd = homeDir + sep + "jsendpraat" + sep + "jsendpraat" + (windows?".bat":".sh");
-	// TODO: doesn't work on linux for some reason
-	// TODO: test on OS X
+	var cmd = homeDir + sep + "jsendpraat" + sep + "jsendpraat" + (windows?".bat":".sh")
+	// suppress message size headers on responses, because on some systems (looking at you OS X)
+	// subprocess.js refuses to convert non UTF-8 characters into strings
+	    + " --suppress-message-size"; 
+
 	if (debug) console.log("cmd: " + cmd);
 	var args = [ system.name ]; // e.g. "firefox"
-	hostProcess = child_process.spawn(cmd, args, {
-	    env : system.env,
-	    encoding : null // ensures stdout is binary instead of being interpreted as "UTF-8"
+	var env = {
+	    PATH: system.env.PATH,
+	    USER: system.env.USER,
+	    HOME: system.env.HOME,
+	    DISPLAY: system.env.DISPLAY
+	};
+	hostProcess = child_process.exec(cmd, {
+	    env : windows?system.env:env
 	});
 	
 	hostProcess.stdout.on('data', receivedFromHost);
@@ -249,6 +256,7 @@ function receivedFromHost(data) {
 
     // find out who it's for
     var tabId = message.clientRef;
+    if (debug) console.log("Forwarding message to : " + tabId + " - " + tabMedia[tabId].port);
 
     // forward the message to them
     tabMedia[tabId].port.emit("message", message);

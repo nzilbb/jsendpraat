@@ -32,6 +32,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -181,6 +182,8 @@ public class SendPraat
    private String sUserDir;
    /** Our process id */
    private int iPid = -1;
+   /** Whether to send message sizes */
+   private boolean bSendMessageSize = true;
    
    /**
     * Constructor
@@ -478,10 +481,37 @@ public class SendPraat
 	 String strCommand = (pathToPraat==null?"":pathToPraat) + praatProgramName;
 	 try
 	 {
-	    String[] cmdArray = { strCommand };	    
+	    String[] cmdArray = { strCommand };
 	    procPraat = Runtime.getRuntime().exec(cmdArray);
 	    log("Praat started");
+
 	    try { Thread.sleep(lWaitMsPraatStart); } catch(InterruptedException x){}
+
+	    // if there was any stdout/stderr output from praat, print it on our stderr
+	    InputStream inStream = procPraat.getInputStream();
+	    InputStream errStream = procPraat.getErrorStream();
+	    byte[] buffer = new byte[1024];
+	    int bytesRead = inStream.available();
+	    while(bytesRead > 0)
+	    {
+	       // write to the log file
+	       bytesRead = inStream.read(buffer);
+	       System.err.write(buffer, 0, bytesRead);
+
+	       // data ready?
+	       bytesRead = inStream.available();
+	    } // next chunk of data
+	    bytesRead = errStream.available();
+	    while(bytesRead > 0)
+	    {
+	       // write to the log file
+	       bytesRead = errStream.read(buffer);
+	       System.err.write(buffer, 0, bytesRead);
+
+	       // data ready?
+	       bytesRead = errStream.available();
+	    } // next chunk of data
+
 	 }
 	 catch(IOException ioException)
 	 {
@@ -651,9 +681,13 @@ public class SendPraat
 	    String reply = jsonReply.toString();
 	    log("reply: " + reply);
 	    byte[] replyBuffer = reply.getBytes("UTF-8");
-	    ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
-	    replySizeBuffer.putInt(replyBuffer.length);
-	    stdout.write(replySizeBuffer.array(), 0, 4);
+	    if (bSendMessageSize)
+	    {
+	       ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
+	       replySizeBuffer.putInt(replyBuffer.length);
+	       stdout.write(replySizeBuffer.array(), 0, 4);
+	       stdout.flush();
+	    }
 	    stdout.write(replyBuffer, 0, replyBuffer.length);
 	    stdout.flush();
 	 }
@@ -737,9 +771,13 @@ public class SendPraat
 		     try
 		     {
 			byte[] replyBuffer = reply.getBytes("UTF-8");
-			ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
-			replySizeBuffer.putInt(replyBuffer.length);
-			stdout.write(replySizeBuffer.array(), 0, 4);
+			if (bSendMessageSize)
+			{
+			   ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
+			   replySizeBuffer.putInt(replyBuffer.length);
+			   stdout.write(replySizeBuffer.array(), 0, 4);
+			   stdout.flush();
+			}
 			stdout.write(replyBuffer, 0, replyBuffer.length);			
 			stdout.flush();
 		     }
@@ -764,9 +802,13 @@ public class SendPraat
 		  try
 		  {
 		     byte[] replyBuffer = reply.getBytes("UTF-8");
-		     ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
-		     replySizeBuffer.putInt(replyBuffer.length);
-		     stdout.write(replySizeBuffer.array(), 0, 4);
+		     if (bSendMessageSize)
+		     {
+			ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
+			replySizeBuffer.putInt(replyBuffer.length);
+			stdout.write(replySizeBuffer.array(), 0, 4);
+			stdout.flush();
+		     }
 		     stdout.write(replyBuffer, 0, replyBuffer.length);			
 		     stdout.flush();
 		  }
@@ -1019,6 +1061,12 @@ public class SendPraat
       }
       else
       {
+	 for (String arg : argv) System.err.println("ARG: \"" + arg + "\"");
+	 if (argv[0].equals("--suppress-message-size"))
+	 {
+	    app.bSendMessageSize = false;
+	    System.err.println("Supressing message size headers.");
+	 }
 	 app.chromiumHost();
       }
       return;
