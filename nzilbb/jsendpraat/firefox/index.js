@@ -181,10 +181,9 @@ function checkHost() {
 	var homeDir = windows ? system.env.USERPROFILE : system.env.HOME;
 	var sep = windows ? "\\" : "/";
 
-	var cmd = homeDir + sep + "jsendpraat" + sep + "jsendpraat" + (windows?".bat":".sh");    
-	// TODO spawn creates a process that doesn't have its environment set up and so
-	// TODO on linux, Praat can't find its home directory and can't execute properly
-	// (works fine on Windows tho TODO: test on OS X)
+	var cmd = homeDir + sep + "jsendpraat" + sep + "jsendpraat" + (windows?".bat":".sh");
+	// TODO: doesn't work on linux for some reason
+	// TODO: test on OS X
 	if (debug) console.log("cmd: " + cmd);
 	var args = [ system.name ]; // e.g. "firefox"
 	hostProcess = child_process.spawn(cmd, args, {
