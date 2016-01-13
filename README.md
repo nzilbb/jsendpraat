@@ -45,7 +45,7 @@ The format for a message is:
        "sendpraat" : [
          "praat",
          "Read from file... https://myserver/myfile.wav",
-	 "Edit"
+         "Edit"
        ]
     }
 ```
