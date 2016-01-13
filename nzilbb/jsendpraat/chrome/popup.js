@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var background = chrome.extension.getBackgroundPage();
     var urls = background.tabMedia[background.lastPageUrl];
     listMedia(urls);
-}
+});
 
 function sendpraat(script)
 {
@@ -97,7 +97,8 @@ function listMedia(urls) {
         praatMediaList.appendChild(div);
 
     } // next url
-});
+}
+
 function openInPraat(url)
 {
     var command = ["praat", "Read from file... " + url, "Edit"];
