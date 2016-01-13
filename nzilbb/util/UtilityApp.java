@@ -110,7 +110,7 @@ import java.awt.event.*;
  * </pre>
  * <p>This could then be invoked as:<br>
  * <tt>java Useful -SomeString=Hello -SomeBoolean sundryArg1 sundryArg2</tt>
- * @author Robert Fromont robert@fromont.net.nz
+ * @author Robert Fromont robert.fromont@canterbury.ac.nz
  */
 
 public class UtilityApp

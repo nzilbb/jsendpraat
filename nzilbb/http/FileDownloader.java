@@ -105,7 +105,6 @@ public class FileDownloader
     * @return Whether the downloader is currently downloading or not
     */
    public boolean getDownloading() { return bDownloading; }
-
    
    /**
     * Last error that occurred.
@@ -123,7 +122,6 @@ public class FileDownloader
     * @param newLastError Last error that occurred.
     */
    public void setLastError(String newLastError) { lastError = newLastError; }
-
       
    /**
     * Constructor

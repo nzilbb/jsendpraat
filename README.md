@@ -1,6 +1,10 @@
 # jsendpraat
 
-Java implementation of sendpraat, which can also function as a Chrome Native Messaging Host, for communication with a Chrome extension (the code for which is here, and the packaged extension is available here: https://chrome.google.com/webstore/detail/praat-integration/hmmnebkieionilgpepijmfabdickmnig ).
+Praat (http://praat.org) is a popular phonetics tool developed by Paul Boersma and David Weenink at the University of Amsterdam. Praat can receive commands from other programs using a mechanism called "sendpraat".
+
+*jsendpraat*, developed by the NZILBB at the University of Canterbury (http://www.nzilbb.canterbury.ac.nz), includes a Java implementation of sendpraat, and browser extensions (for Chrome and Friefox), allowing interaction with Praat from a web browser. These extensions were developed primarily for use with LaBB-CAT, a brower-based linguistics tool (https://labbcat.canterbury.ac.nz), but can be used to open embedded audio in Praat from any web page.
+
+jsendpraat.jar functions as a Chrome Native Messaging Host, which manages communication between the browser (Chrome or Firefox) extension and Praat. The Java code for jsendpraat.jar and the Javascript code for the browser extensions are here. The packaged Chrome extension is available here: https://chrome.google.com/webstore/detail/praat-integration/hmmnebkieionilgpepijmfabdickmnig
 
 This implementation tries to load and run JNI native libraries for executing sendpraat compiled from original C code.  Failing that, it looks for and runs the sendpraat standalone program, which  must be installed in the same folder as the praat program. Failing that, it attempts to use a pure-java implementation of sendpraat, which uses signals and only works on Linux.
 
@@ -22,7 +26,7 @@ nzilbb.jsendpraat.SendPraat sp = new nzilbb.jsendpraat.SendPraat();
 sp.sendpraat("Praat", "Quit");
 ```
 
-This implementation also works as a Chrome Native Messaging Host - it can be started from the command line, and accepts messages on stdin using Chrome's Native Messaging protocol. Operating in this mode, two extra functions are supported:
+jsendpraat.jar works as a Chrome Native Messaging Host if the first command line argument is not "Praat". It then accepts messages on stdin using Chrome's Native Messaging protocol (https://developer.chrome.com/extensions/nativeMessaging#native-messaging-host-protocol). Operating in this mode, two extra functions are supported:
 * Praat commands can include URLs, which are automatically downloaded to a local file and the local file name substituted into the command before execution. The format for a message is:
 ```
     {

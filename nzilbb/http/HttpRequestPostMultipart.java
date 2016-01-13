@@ -35,8 +35,8 @@ import java.io.FileInputStream;
 import java.util.Iterator;
 
 /**
- * <p>Title: Client HTTP Request class</p>
- * <p>Description: this class helps to send POST HTTP requests with various form data,
+ * <p>Client HTTP Request class.
+ * <p>Helps to send POST HTTP requests with various form data,
  * including files. Cookies can be added to be included in the request.</p>
  * <p>Originally com.myjavatools.web.ClientHttpRequest (version 1.0) by Vlad Patryshev</p>
  * <p>Adapted for jsendpraat by Robert Fromont</p>
@@ -173,8 +173,7 @@ public class HttpRequestPostMultipart
    public HttpRequestPostMultipart(String urlString, String sAuthorization) throws IOException 
    {
       this(new URL(urlString), sAuthorization);
-   }
-   
+   }   
    
    @SuppressWarnings("rawtypes")
    private void postCookies() 

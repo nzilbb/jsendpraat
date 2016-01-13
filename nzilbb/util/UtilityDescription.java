@@ -25,7 +25,7 @@ import java.lang.annotation.*;
 
 /**
  * Annotation for a {@link UtilityApp} - used to inform command-line and applet parameter interpretation, and to product usage information.
- * @author Robert Fromont robert@fromont.net.nz
+ * @author Robert Fromont robert.fromont@canterbury.ac.nz
  */
 @Documented
 @Target(ElementType.TYPE)

@@ -618,7 +618,7 @@ public class SendPraat
 	       if ("version".equals(jsonMessage.getString("message")))
 	       {
 		  jsonReply.put("message", "version");
-		  jsonReply.put("version", "20151125.1824");
+		  jsonReply.put("version", "20160113.1254");
 		  jsonReply.remove("error");
 		  jsonReply.put("code", 0);
 	       }
@@ -1079,17 +1079,6 @@ public class SendPraat
     */
    public void log(String s)
    {
-      // if (logWriter == null)
-      // {
-      // 	 try
-      // 	 {
-      // 	    logWriter = new PrintWriter(new File("SendPraat.log"));
-      // 	 }
-      // 	 catch(Throwable exception)
-      // 	 {}
-      // }
-      // logWriter.println(s);
-      // logWriter.flush();
       if (verbose) System.err.println(s);
    } // end of log()
 
@@ -1309,19 +1298,6 @@ public class SendPraat
 	File pidFile = null;
 	long pid = 0;
 	long wid = 0;
-	/*#elif win
-		char homeDirectory [256], messageFileName [256], windowName [256];
-		HWND window;
-		(void) display;
-		(void) timeOut;
-	#elif mac
-		AEDesc programDescriptor;
-		AppleEvent event, reply;
-		OSErr err;
-		UInt32 signature;
-		(void) display;
-	#endif
-	*/
 	/*
 	 * Clean up from an earlier call.
 	 */
@@ -1363,14 +1339,6 @@ public class SendPraat
 	}
 	else if (win)
 	{	   
-// 	   if (GetEnvironmentVariableA ("USERPROFILE", homeDirectory, 255)) {
-// 	      ;   /* Ready. */
-// 	   } else if (GetEnvironmentVariableA ("HOMEDRIVE", homeDirectory, 255)) {
-// 	      GetEnvironmentVariableA ("HOMEPATH", homeDirectory + strlen (homeDirectory), 255);
-// 	   } else {
-// 	      GetWindowsDirectoryA (homeDirectory, 255);
-// 	   }
-//	   sprintf (messageFileName, "%s\\%s\\Message.txt", homeDirectory, programName);
 	   if (sUserHome == null) 
 	   {
 	      errorMessage = "user.home property not available.";
@@ -1464,15 +1432,7 @@ public class SendPraat
 	    * Get the window handle of the "Objects" window of a running Praat-shell program.
 	    */
 	   errorMessage = "Please download sendpraat and save it to the same folder where Praat is installed: http://www.fon.hum.uva.nl/praat/sendpraat.html";
-	   return errorMessage;
-	   
-// 	   sprintf (windowName, "PraatShell1 %s", programName);
-// 	   window = FindWindowA (windowName, NULL);
-// 	   if (! window) {
-// 	      sprintf (errorMessage, "Program %s not running (or an old version).", programName);
-// 	      return errorMessage;
-// 	   }
-	   
+	   return errorMessage;	   	   
 	}
 	else if (mac)
 	{
@@ -1482,14 +1442,6 @@ public class SendPraat
 	    */
 	   errorMessage = "Please download sendpraat and save it to the same folder where Praat is installed: http://www.fon.hum.uva.nl/praat/sendpraat.html";
 	   return errorMessage;
-	   
-// 	   if (! strcmp (programName, "praat") || ! strcmp (programName, "Praat") || ! strcmp (programName, "PRAAT"))
-// 	      signature = 'PpgB';
-// 	   else if (! strcmp (programName, "als") || ! strcmp (programName, "Als") || ! strcmp (programName, "ALS"))
-// 	      signature = 'CclA';
-// 	   else
-// 	      signature = 0;
-// 	   AECreateDesc (typeApplSignature, & signature, 4, & programDescriptor);
 	}
 	else
 	{
@@ -1500,45 +1452,6 @@ public class SendPraat
 	 * Send the message.
 	 */
  	if (xwin)
-//      {
-// 		/*
-// 		 * Be ready to receive notification of completion.
-// 		 */
-// 		if (timeOut)
-// 			signal (SIGUSR2, handleCompletion);
-// 		/*
-// 		 * Notify running program.
-// 		 */
-// 		if (wid != 0) {   /* Praat shell version October 21, 1998 or later? Send event to window. */
-// 			/*
-// 			 * Notify main window.
-// 			 */
-// 			XEvent event;
-// 			int displaySupplied = display != NULL;
-// 			if (! displaySupplied) {
-// 				display = XOpenDisplay (NULL);
-// 				if (display == NULL) {
-// 					sprintf (errorMessage, "Cannot open display %s.", XDisplayName (NULL));
-// 					return errorMessage;
-// 				}
-// 			}
-// 			event. type = ClientMessage;
-// 			event. xclient. serial = 0;
-// 			event. xclient. send_event = True;
-// 			event. xclient. display = display;
-// 			event. xclient. window = (Window) wid;
-// 			event. xclient. message_type = XInternAtom (display, "SENDPRAAT", False);
-// 			event. xclient. format = 8;   /* No byte swaps. */
-// 			strcpy (& event. xclient.data.b [0], "SENDPRAAT");
-// 			if(! XSendEvent (display, (Window) wid, True, KeyPressMask, & event)) {
-// 				if (! displaySupplied) XCloseDisplay (display);
-// 				sprintf (errorMessage, "Cannot send message to %s (window %ld). "
-// 					"The program %s may have been started by a different user, "
-// 					"or may have crashed.", programName, wid, programName);
-// 				return errorMessage;
-// 			}
-// 			if (! displaySupplied) XCloseDisplay (display);
-// 		} else 
 	{
 	   /*
 	    * Use interrupt mechanism.
@@ -1557,55 +1470,6 @@ public class SendPraat
 	      return errorMessage;
 	   }
 	} 		
-// 		/*
-// 		 * Wait for the running program to notify us of completion,
-// 		 * but do not wait for more than 'timeOut' seconds.
-// 		 */
-// 		if (timeOut) {
-// 			signal (SIGALRM, handleTimeOut);
-// 			alarm (timeOut);
-// 			theTimeOut = timeOut;   /* Hand an argument to handleTimeOut () in a static variable. */
-// 			errorMessage [0] = '\0';
-// 			pause ();
-// 			if (errorMessage [0] != '\0') return errorMessage;
-// 		}
-// 	#elif win
-// 		/*
-// 		 * Notify the running program by sending a WM_USER message to its main window.
-// 		 */
-// 		if (SendMessage (window, WM_USER, 0, 0)) {
-// 			sprintf (errorMessage, "Program %s returns error.", programName);   /* BUG? */
-// 			return errorMessage;
-// 		}
-// 	#elif mac
-// 		/*
-// 		 * Notify the running program by sending it an Apple event of the magic class 758934755.
-// 		 */
-// 		AECreateAppleEvent (758934755, 0, & programDescriptor, kAutoGenerateReturnID, 1, & event);
-// 		AEPutParamPtr (& event, 1, typeChar, text, strlen (text) + 1);
-// 		#ifdef __MACH__
-// 			err = AESendMessage (& event, & reply,
-// 				( timeOut == 0 ? kAENoReply : kAEWaitReply ) | kAECanInteract | kAECanSwitchLayer,
-// 				timeOut == 0 ? kNoTimeOut : 60 * timeOut);
-// 		#else
-// 			err = AESend (& event, & reply,
-// 				( timeOut == 0 ? kAENoReply : kAEWaitReply ) | kAECanInteract | kAECanSwitchLayer,
-// 				kAENormalPriority, timeOut == 0 ? kNoTimeOut : 60 * timeOut, NULL, NULL);
-// 		#endif
-// 		if (err != noErr) {
-// 			if (err == procNotFound || err == connectionInvalid)
-// 				sprintf (errorMessage, "Could not send message to program \"%s\".\n"
-// 					"The program is probably not running (or an old version).", programName);
-// 			else if (err == errAETimeout)
-// 				sprintf (errorMessage, "Message to program \"%s\" timed out "
-// 					"after %ld seconds, before completion.", programName, timeOut);
-// 			else
-// 				sprintf (errorMessage, "Unexpected sendpraat error %d.\nNotify the author.", err);
-// 		}
-// 		AEDisposeDesc (& programDescriptor);
-// 		AEDisposeDesc (& event);
-// 		AEDisposeDesc (& reply);
-// 	#endif
 	/*
 	 * Notify the caller of success (NULL pointer) or failure (string with an error message).
 	 */
