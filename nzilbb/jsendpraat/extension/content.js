@@ -1,5 +1,5 @@
 //
-// Copyright 2015-2016 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2016 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -19,18 +19,6 @@
 //    along with jsendpraat; if not, write to the Free Software
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
-
-// BROWSER-SPECIFIC CODE:
-
-var background = chrome.runtime.connect({name: "content"});
-
-function registerBackgroundMessageHandler(handler) {
-    background.onMessage.addListener(handler);
-}
-
-function postMessageToBackground(message) {
-    background.postMessage(message);
-}
 
 // CROSS-BROWSER CODE:
 
@@ -62,17 +50,17 @@ function activateAudioTags(urls) {
 	"urls" : urls});
 }
 
+// set up handlers for incoming messages from index.js
 registerBackgroundMessageHandler(function(msg) {
-    if (msg.message == "progress") {
+    if (msg.message == "progress"
+       || msg.message == "upload") {
 	msg.type = "FROM_PRAAT_EXTENSION";
 	window.postMessage(msg, '*');
     }
 });
 
-window.addEventListener("message", function(event) {
-    // We only accept messages from ourselves
-    if (event.source != window) return;
-    
+// set up handlers for incoming messages from the content (LaBB-CAT transcripts)
+window.addEventListener("message", function(event) {    
     if (event.data.type && (event.data.type == "FROM_PRAAT_PAGE")) {
 	// from Praat-supporting page
 	switch (event.data.message) {
@@ -92,7 +80,6 @@ window.addEventListener("message", function(event) {
 // find all audio elements on the page
 function findAudioUrls() { // TODO add this to a library shared between extensions
 
-    // find all audio elements on the page
     var urls = [];
     var audioTags = document.getElementsByTagName("audio");
     for (a = 0; a < audioTags.length; a++) {

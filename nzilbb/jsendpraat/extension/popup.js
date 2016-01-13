@@ -1,5 +1,5 @@
 //
-// Copyright 2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2016 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -19,26 +19,6 @@
 //    along with jsendpraat; if not, write to the Free Software
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
-
-// BROWSER-SPECIFIC CODE:
-
-var background = chrome.runtime.connect({name: "popup"});
-background.onMessage.addListener(messageHandler);
-
-document.addEventListener('DOMContentLoaded', function () {
-    var background = chrome.extension.getBackgroundPage();
-    var urls = background.tabMedia[background.lastPageUrl];
-    listMedia(urls);
-});
-
-function sendpraat(script)
-{
-    background.postMessage(
-	{
-	    "message" : "sendpraat", 
-	    "sendpraat" : script
-	});
-}
 
 // CROSS-BROWSER CODE:
 
@@ -70,21 +50,29 @@ function messageHandler(msg) {
 }
 
 function listMedia(urls) {
-    for (u in urls)
+    var praatMediaList = document.getElementById("praatMediaList");
+    // remove all existing children first
+    while (praatMediaList.firstChild) praatMediaList.removeChild(praatMediaList.firstChild);
+    document.getElementById("progressMessage").style.display = "none";
+    document.getElementById("progress").style.display = "none";
+    
+    // add new urls
+    for (var u in urls)
     {
         var div = document.createElement("div");
 	div.className = "media"
-
+	
         var save = document.createElement("a");
         save.className = "save";
         save.download = urls[u].replace(/.*\//, "");
 	save.href = urls[u];
         save.title = "Save";
+        save.target = "download";
         var img = document.createElement("img");
 	img.src = "document-save.png";
 	save.appendChild(img);
         div.appendChild(save);
-
+	
         var praat = document.createElement("a");
         praat.className = "praaturl";
 	praat.href = "#";
@@ -93,9 +81,9 @@ function listMedia(urls) {
         praat.onclick = function() { openInPraat(this.url); };
 	praat.appendChild(document.createTextNode(urls[u]));
         div.appendChild(praat);
-
+	
         praatMediaList.appendChild(div);
-
+	
     } // next url
 }
 

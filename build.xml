@@ -15,6 +15,7 @@
   <property name="chromepem" value="${user.home}/jsendpraat.pem"/>
   <property name="chromesrc" location="nzilbb/jsendpraat/chrome"/>
   <property name="firefoxsrc" location="nzilbb/jsendpraat/firefox"/>
+  <property name="sharedsrc" location="nzilbb/jsendpraat/extension"/>
   <xmlproperty file="${user.home}/key.xml" />
   
   <target name="init">
@@ -158,27 +159,61 @@
 
   <target name="chromeextension" depends="hostinstaller"
 	  description="package the jsendpraat chrome extension">
+    <!-- temporarily copy extension key -->
     <copy file="${chromepem}" tofile="${chromesrc}/key.pem" />
+    <!-- copy native messaging host installer -->
     <copy file="${dist}/install-${ant.project.name}.jar" tofile="${chromesrc}/install-${ant.project.name}.jar" />
+    <!-- merge cross-browser code with browser-specific code -->
+    <concat destfile="${chromesrc}/content.js">
+      <fileset dir="${chromesrc}" includes="content-chrome.js"/>
+      <fileset dir="${sharedsrc}" includes="content.js"/>
+    </concat>
+    <concat destfile="${chromesrc}/popup.js">
+      <fileset dir="${chromesrc}" includes="popup-chrome.js"/>
+      <fileset dir="${sharedsrc}" includes="popup.js"/>
+    </concat>
+    <copy todir="${chromesrc}" file="${sharedsrc}/popup.html" />
+    <copy todir="${chromesrc}" file="${sharedsrc}/document-save.png" />
+    <copy todir="${chromesrc}" file="${sharedsrc}/install.html" />
+    <copy todir="${chromesrc}" file="${sharedsrc}/upgrade.html" />
+    <!-- package extension -->
     <zip zipfile="${dist}/${ant.project.name}.zip" 
 	 basedir="${chromesrc}">
     </zip>
+    <!-- cleanup -->
     <delete file="${chromesrc}/key.pem"/>
     <delete file="${chromesrc}/install-${ant.project.name}.jar"/>
   </target>
 
   <target name="firefoxextension" depends="hostinstaller"
 	  description="package the jsendpraat chrome extension">
-    <copy file="${dist}/install-${ant.project.name}.jar" tofile="${firefoxsrc}/data/install-${ant.project.name}.jar" />
+    <!-- clean up editor backups -->
     <delete verbose="true">
-      <fileset dir=".." includes="**/*~" defaultexcludes="no" /><!-- clean up editor backups -->
+      <fileset dir=".." includes="**/*~" defaultexcludes="no" />
     </delete>    
+    <!-- copy native messaging host installer -->
+    <copy file="${dist}/install-${ant.project.name}.jar" tofile="${firefoxsrc}/data/install-${ant.project.name}.jar" />
+    <!-- merge cross-browser code with browser-specific code -->
+    <concat destfile="${firefoxsrc}/data/content.js">
+      <fileset dir="${firefoxsrc}/data/" includes="content-firefox.js"/>
+      <fileset dir="${sharedsrc}" includes="content.js"/>
+    </concat>
+    <concat destfile="${firefoxsrc}/data/popup.js">
+      <fileset dir="${firefoxsrc}/data/" includes="popup-firefox.js"/>
+      <fileset dir="${sharedsrc}" includes="popup.js"/>
+    </concat>
+    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/popup.html" />
+    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/document-save.png" />
+    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/install.html" />
+    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/upgrade.html" />
+    <!-- package extension -->
     <exec executable="jpm" dir="${firefoxsrc}">
       <arg value="xpi"/>
     </exec>
     <copy todir="${dist}">
       <fileset dir="${firefoxsrc}" includes="*.xpi" />
     </copy>
+    <!-- cleanup -->
     <delete file="${firefoxsrc}/data/install-${ant.project.name}.jar"/>
   </target>
   
