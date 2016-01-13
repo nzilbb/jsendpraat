@@ -29,6 +29,10 @@ var pageMod = require("sdk/page-mod");
 
 var debug = true;
 
+// host version checking
+var hostVersion = null;
+var hostVersionMin = "20160113.1254";
+
 var tabMedia = {}; // key = tab.id
 
 // results of looking for audio tags and URLs on a page
@@ -221,6 +225,10 @@ function checkHost() {
 	    }
 	    hostProcess = null;
 	});
+
+	// check the version of the host
+	sendToHost({ message: "version"});
+
     }
 }
 
@@ -253,14 +261,24 @@ function receivedFromHost(data) {
     
     if (debug) console.log("Host process: " + data);
     var message = JSON.parse(data);
-
-    // find out who it's for
-    var tabId = message.clientRef;
-    if (debug) console.log("Forwarding message to : " + tabId + " - " + tabMedia[tabId].port);
-
-    // forward the message to them
-    tabMedia[tabId].port.emit("message", message);
-
+    
+    if (message.message == "version" || message.code >= 900) {
+	hostVersion = message.version;
+	console.log("nzilbb.jsendpraat.chrome: Host version is " + hostVersion);
+	if (!hostVersion || hostVersion < hostVersionMin) {
+	    console.log("nzilbb.jsendpraat.chrome: Need at least version " + hostVersionMin);
+	    emit(hostProcess.stdin, "end");
+	    hostProcess.kill();
+	    tabs.open("./upgrade.html");
+	}
+    } else {
+	// find out who it's for
+	var tabId = message.clientRef;
+	if (debug) console.log("Forwarding message to : " + tabId + " - " + tabMedia[tabId].port);
+	
+	// forward the message to them
+	tabMedia[tabId].port.emit("message", message);
+    }
 }
 
 // ensure host process is killed when we exit
