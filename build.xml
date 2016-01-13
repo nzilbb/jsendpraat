@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<project name="jsendpraat" default="chromeextension" basedir=".">
+<project name="jsendpraat" default="all" basedir=".">
   <description>Java implemetation for sendpraat</description>
   <!-- set global properties for this build -->
   <property name="src"   location="."/>
@@ -7,12 +7,14 @@
   <property name="dist"  location="bin"/>
   <property name="lib"   location="lib"/>
   <property name="srcfiles" value="nzilbb/jsendpraat/SendPraat.java nzilbb/http/IMessageHandler.java nzilbb/http/IProgressIndicator.java nzilbb/http/HttpRequestPostMultipart.java nzilbb/http/RequestCancelledException.java nzilbb/http/TemporaryFileStore.java nzilbb/http/FileDownloader.java org/json/**/*.java"/>
+  <property name="installersrcfiles" value="nzilbb/jsendpraat/chrome/HostInstaller.java"/>
   <property name="mainclass" value="nzilbb.jsendpraat.SendPraat"/>
   <property name="installermainclass" value="nzilbb.jsendpraat.chrome.HostInstaller"/>
   <property name="installerdescription" value="Install Praat Integration"/>
   <property name="installericon" value="HostInstaller.png"/>
-  <property name="chromesrc" location="nzilbb/jsendpraat/chrome"/>
   <property name="chromepem" value="${user.home}/jsendpraat.pem"/>
+  <property name="chromesrc" location="nzilbb/jsendpraat/chrome"/>
+  <property name="firefoxsrc" location="nzilbb/jsendpraat/firefox"/>
   <xmlproperty file="${user.home}/key.xml" />
   
   <target name="init">
@@ -20,6 +22,9 @@
     <tstamp/>
     <!-- Create the build directory structure used by compile -->
     <mkdir dir="${build}"/>
+  </target>
+
+  <target name="all" depends="dist,chromeextension,firefoxextension">
   </target>
   
   <target name="compile" depends="init"
@@ -46,7 +51,7 @@
       <arg line="-shared"/>
       <arg line="-Wl,-soname,libnative.so"/>
       <arg line="-lX11"/>
-      <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include"/> <!-- change usr/lib/jvm/jdk1.7.0 to value of $JAVA_HOME  -->
+      <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include"/>
       <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include/linux"/>
       <arg line="${src}/nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.c"/>
       <arg line="-lc"/>
@@ -107,12 +112,13 @@
     <chmod file="${dist}/${ant.project.name}.jar" perm="u+rx"/>    
     <delete dir="${build}"/>
   </target>
+
   <target name="hostinstaller" depends="dist"
 	  description="package the jsendpraat native messaging host installer">
     <mkdir dir="${build}/install"/>
     <javac srcdir="${src}" destdir="${build}/install"
 	   classpath="${lib}/jRegistryKey.jar"
-	   includes="nzilbb/jsendpraat/chrome/HostInstaller.java"
+	   includes="${installersrcfiles}"
 	   listfiles="yes"
 	   includeantruntime="false"
 	   target="6"
@@ -130,6 +136,7 @@
 	<attribute name="Codebase" value="*"/>
 	<attribute name="Caller-Allowable-Codebase" value="*"/>
       </manifest>
+      <fileset dir="${src}" includes="${installersrcfiles}" />
       <zipfileset dir="${src}/nzilbb/jsendpraat/chrome" includes="nzilbb.jsendpraat.chrome.json jsendpraat.sh jsendpraat.bat" prefix="" />
       <zipfileset dir="${dist}" includes="jsendpraat.jar" prefix="" />
       <fileset dir="${src}" includes="/nzilbb/jsendpraat/chrome/${installericon}" />
@@ -158,6 +165,21 @@
     </zip>
     <delete file="${chromesrc}/key.pem"/>
     <delete file="${chromesrc}/install-${ant.project.name}.jar"/>
+  </target>
+
+  <target name="firefoxextension" depends="hostinstaller"
+	  description="package the jsendpraat chrome extension">
+    <copy file="${dist}/install-${ant.project.name}.jar" tofile="${firefoxsrc}/data/install-${ant.project.name}.jar" />
+    <delete verbose="true">
+      <fileset dir=".." includes="**/*~" defaultexcludes="no" /><!-- clean up editor backups -->
+    </delete>    
+    <exec executable="jpm" dir="${firefoxsrc}">
+      <arg value="xpi"/>
+    </exec>
+    <copy todir="${dist}">
+      <fileset dir="${firefoxsrc}" includes="*.xpi" />
+    </copy>
+    <delete file="${firefoxsrc}/data/install-${ant.project.name}.jar"/>
   </target>
   
   <target name="clean" description="clean up" >
