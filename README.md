@@ -38,7 +38,6 @@ jsendpraat.jar works as a Chrome Native Messaging Host if the first command line
 ```
 Operating in this mode, two extra functions are supported:
 * Praat commands can include URLs, which are automatically downloaded to a local file and the local file name substituted into the command before execution. e.g.
-The format for a message is:
 ```
     {
        "message" : "sendpraat"
