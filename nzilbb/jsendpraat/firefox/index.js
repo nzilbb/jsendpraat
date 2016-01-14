@@ -305,8 +305,10 @@ function error(title, message) {
 	contentScriptFile: "./error.js",
 	contentScriptWhen: "end",
 	contentScript: [
-	    "document.getElementById('errorTitle').innerHTML = '"+title.replace(/\\/g, "\\\\").replace(/'/g, "\\'")+"';",
-	    "document.getElementById('errorMessage').innerHTML = '"+message.replace(/\\/g, "\\\\").replace(/'/g, "\\'")+"';"
+	    "while (document.getElementById('errorTitle').firstChild) document.getElementById('errorTitle').removeChild(document.getElementById('errorTitle').firstChild);",
+	    "document.getElementById('errorTitle').appendChild(document.createTextNode('"+title.replace(/\\/g, "\\\\").replace(/'/g, "\\'")+"'));",
+	    "while (document.getElementById('errorMessage').firstChild) document.getElementById('errorMessage').removeChild(document.getElementById('errorMessage').firstChild);",
+	    "document.getElementById('errorMessage').appendChild(document.createTextNode('"+message.replace(/\\/g, "\\\\").replace(/'/g, "\\'")+"'));"
 	]
     });
     errorMessage.port.on("OK", function() { errorMessage.destroy(); });

@@ -26,12 +26,14 @@ function messageHandler(msg) {
     var progressMessage = document.getElementById("progressMessage");
     progressMessage.style.display = "";
     if (msg.error) {
+	removeAllChildren(progressMessage);
+	progressMessage.appendChild(document.createTextNode(msg.error));
 	progressMessage.classList.add("error");
-	progressMessage.innerHTML = msg.error;
 	progressMessage.title = msg.error;
     } else if (msg.string) {
+	removeAllChildren(progressMessage);
+	progressMessage.appendChild(document.createTextNode(msg.string));
 	progressMessage.classList.remove("error");
-	progressMessage.innerHTML = msg.string;
 	progressMessage.title = msg.string;
     }
 
@@ -51,8 +53,7 @@ function messageHandler(msg) {
 
 function listMedia(urls) {
     var praatMediaList = document.getElementById("praatMediaList");
-    // remove all existing children first
-    while (praatMediaList.firstChild) praatMediaList.removeChild(praatMediaList.firstChild);
+    removeAllChildren(praatMediaList);
     document.getElementById("progressMessage").style.display = "none";
     document.getElementById("progress").style.display = "none";
     
@@ -87,9 +88,11 @@ function listMedia(urls) {
     } // next url
 }
 
-function openInPraat(url)
-{
+function openInPraat(url) {
     var command = ["praat", "Read from file... " + url, "Edit"];
     sendpraat(command);
 }
 
+function removeAllChildren(element) {
+    while (element.firstChild) element.removeChild(element.firstChild);
+}
