@@ -53,7 +53,8 @@ function activateAudioTags(urls) {
 // set up handlers for incoming messages from index.js
 registerBackgroundMessageHandler(function(msg) {
     if (msg.message == "progress"
-       || msg.message == "upload") {
+       || msg.message == "upload"
+       || msg.message == "sendpraat") {
 	msg.type = "FROM_PRAAT_EXTENSION";
 	window.postMessage(msg, '*');
     }
