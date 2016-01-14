@@ -207,18 +207,15 @@ function checkHost() {
 	hostProcess.stderr.on('data', function (data) {
 	    // log the error
 	    console.log(cmd + ": " + data);
-	    // if it's something like 
-	    //  "/bin/sh: 1: /home/robert/jsendpraat/jsendpraat.sh: not found"
-	    // ... then the host isn't installed
-	    if (data.trim().match(/not found$/)) {
-		console.log("Messaging host is not yet installed: " + cmd);
-		tabs.open("./install.html");
-	    }
 	});
     
 	hostProcess.on('close', function (code) {
 	    console.log(cmd + " exited with code " + code);
 	    hostProcess = null;
+	    if (code == 1 || code == 32512) {
+		console.log("Messaging host is not yet installed: " + cmd);
+		tabs.open("./install.html");
+	    }
 	});
     
 	hostProcess.on('error', function (err) {
