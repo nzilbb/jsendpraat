@@ -212,8 +212,16 @@ public class SendPraat
 	 // try to respect config file conventions of each platform
 	 if (win)
 	 {
-	    configDir = new File(configDir, "AppData");
-	    configDir = new File(configDir, "Local");
+	    String APPDATA = System.getenv("APPDATA");
+	    if (APPDATA != null)
+	    {
+	       configDir = new File(System.getenv("APPDATA"));
+	    }
+	    else
+	    {
+	       configDir = new File(configDir, "AppData");
+	       configDir = new File(configDir, "Local");
+	    }
 	    configDir = new File(configDir, "jsendpraat");
 	 }
 	 else if (xwin)

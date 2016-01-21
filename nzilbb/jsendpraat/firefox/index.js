@@ -182,7 +182,7 @@ function checkHost() {
     if (!hostProcess) {
 	var system = require("sdk/system");
 	var windows = system.platform.indexOf("win") == 0;
-	var homeDir = windows ? system.env.USERPROFILE : system.env.HOME;
+	var homeDir = windows ? system.env.HOMESHARE || system.env.USERPROFILE : system.env.HOME;
 	var sep = windows ? "\\" : "/";
 
 	var cmd = homeDir + sep + "jsendpraat" + sep + "jsendpraat" + (windows?".bat":".sh")
@@ -302,10 +302,10 @@ function error(title, message) {
 	contentScriptFile: "./error.js",
 	contentScriptWhen: "end",
 	contentScript: [
-	    "while (document.getElementById('errorTitle').firstChild) document.getElementById('errorTitle').removeChild(document.getElementById('errorTitle').firstChild);",
-	    "document.getElementById('errorTitle').appendChild(document.createTextNode('"+title.replace(/\\/g, "\\\\").replace(/'/g, "\\'")+"'));",
+	    "while (document.getElementById('errorTitle').firstChild) document.getElementById('errorTitle').removeChild(document.getElementById('errorTitle').firstChild)",
+	    "document.getElementById('errorTitle').appendChild(document.createTextNode('"+title.replace(/\\/g, "\\\\").replace(/'/g, "\\'").trim()+"'))",
 	    "while (document.getElementById('errorMessage').firstChild) document.getElementById('errorMessage').removeChild(document.getElementById('errorMessage').firstChild);",
-	    "document.getElementById('errorMessage').appendChild(document.createTextNode('"+message.replace(/\\/g, "\\\\").replace(/'/g, "\\'")+"'));"
+	    "document.getElementById('errorMessage').appendChild(document.createTextNode('"+message.replace(/\\/g, "\\\\").replace(/'/g, "\\'").trim()+"'))"
 	]
     });
     errorMessage.port.on("OK", function() { errorMessage.destroy(); });
