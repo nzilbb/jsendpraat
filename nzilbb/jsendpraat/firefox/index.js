@@ -182,8 +182,10 @@ function checkHost() {
     if (!hostProcess) {
 	var system = require("sdk/system");
 	var windows = system.platform.indexOf("win") == 0;
-	var homeDir = windows ? system.env.HOMESHARE || system.env.USERPROFILE : system.env.HOME;
 	var sep = windows ? "\\" : "/";
+	var homeDir = windows ? system.env.APPDATA 
+	    || system.env.USERPROFILE + sep + "AppData" + sep + "Roaming"
+	    : system.env.HOME;
 
 	var cmd = homeDir + sep + "jsendpraat" + sep + "jsendpraat" + (windows?".bat":".sh")
 	// suppress message size headers on responses, because on some systems (looking at you OS X)

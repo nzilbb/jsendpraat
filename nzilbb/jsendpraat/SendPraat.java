@@ -220,7 +220,7 @@ public class SendPraat
 	    else
 	    {
 	       configDir = new File(configDir, "AppData");
-	       configDir = new File(configDir, "Local");
+	       configDir = new File(configDir, "Roaming");
 	    }
 	    configDir = new File(configDir, "jsendpraat");
 	 }
