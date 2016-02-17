@@ -66,7 +66,7 @@ window.addEventListener("message", function(event) {
 	// from Praat-supporting page
 	switch (event.data.message) {
 	case "PING": // transcript is pinging the extension, so acknowledge...
-	    window.postMessage({ type: 'FROM_PRAAT_EXTENSION', message: 'ACK', version: 0.85 }, '*');
+	    window.postMessage({ type: 'FROM_PRAAT_EXTENSION', message: 'ACK', version: 0.86 }, '*');
 	    break;
 	case "sendpraat":
 	    sendpraat(event.data.sendpraat);
