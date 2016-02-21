@@ -1,6 +1,6 @@
 {
     "name": "Praat Integration",
-    "version": "0.86",
+    "version": "0.88",
     "manifest_version": 2,
     "description": "Allows Praat to open media on a page",
     "icons": {
