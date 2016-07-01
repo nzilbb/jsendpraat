@@ -91,7 +91,9 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	    if (source.type == "audio/wav"
 		|| source.src.search(/\.wav$/) >= 0)
 	    {
-		urls.push(source.src);
+		if (!urls.includes(source.src)) {
+		    urls.push(source.src);
+		}
 	    }
 	} // next <source>	    
 	for (s = 0; s < sources.length; s++) {
@@ -99,7 +101,9 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	    if (source.type == "audio/flac"
 		|| source.src.search(/\.flac$/) >= 0)
 	    {
-		urls.push(source.src);
+		if (!urls.includes(source.src)) {
+		    urls.push(source.src);
+		}
 	    }
 	} // next <source>	    
 	for (s = 0; s < sources.length; s++) {
@@ -107,10 +111,23 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	    if (source.type == "audio/mpeg"
 		|| source.src.search(/\.mp3$/) >= 0)
 	    {
-		urls.push(source.src);
+		if (!urls.includes(source.src)) {
+		    urls.push(source.src);
+		}
 	    }
 	} // next <source>	    
     } // next <audio>
+
+    var anchorTags = document.getElementsByTagName("a");
+    for (a = 0; a < anchorTags.length; a++) {
+	var anchor = anchorTags[a];
+	if (anchor.href.endsWith(".wav") || anchor.href.endsWith(".mp3")) {
+	    if (!urls.includes(anchor.href)) {
+		urls.push(anchor.href);
+	    }
+	}
+    } // next <a>
+
     return urls;
 }
 

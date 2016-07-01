@@ -60,30 +60,33 @@ function listMedia(urls) {
     // add new urls
     for (var u in urls)
     {
-        var div = document.createElement("div");
-	div.className = "media"
-	
-        var save = document.createElement("a");
-        save.className = "save";
-        save.download = urls[u].replace(/.*\//, "");
-	save.href = urls[u];
-        save.title = "Save";
-        save.target = "download";
-        var img = document.createElement("img");
-	img.src = "document-save.png";
-	save.appendChild(img);
-        div.appendChild(save);
-	
-        var praat = document.createElement("a");
-        praat.className = "praaturl";
-	praat.href = "#";
-        praat.url = urls[u];
-        praat.title = "Open in Praat";
-        praat.onclick = function() { openInPraat(this.url); };
-	praat.appendChild(document.createTextNode(urls[u]));
-        div.appendChild(praat);
-	
-        praatMediaList.appendChild(div);
+	if (!document.getElementById(urls[u])) {
+            var div = document.createElement("div");
+	    div.className = "media"
+	    
+            var save = document.createElement("a");
+            save.className = "save";
+            save.download = urls[u].replace(/.*\//, "");
+	    save.href = urls[u];
+            save.title = "Save";
+            save.target = "download";
+            var img = document.createElement("img");
+	    img.src = "document-save.png";
+	    save.appendChild(img);
+            div.appendChild(save);
+	    
+            var praat = document.createElement("a");
+            praat.className = "praaturl";
+	    praat.href = "#";
+            praat.url = urls[u];
+            praat.id = urls[u];
+            praat.title = "Open in Praat";
+            praat.onclick = function() { openInPraat(this.url); };
+	    praat.appendChild(document.createTextNode(urls[u]));
+            div.appendChild(praat);
+	    
+            praatMediaList.appendChild(div);
+	}
 	
     } // next url
 }

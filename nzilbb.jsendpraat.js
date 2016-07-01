@@ -131,7 +131,8 @@ nzilbb.jsendpraat.version = null;
  * @callback {uploadResponse} [onUploadResponse] Invoked when the response to an upload() call is received.
  */
 nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatResponse, onProgress, onUploadResponse) {
-    if (window.postMessage) { // extension could be compatible with this browser
+    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (!isSafari && window.postMessage) { // extension could be compatible with this browser
         window.addEventListener("message", function(event) {
 	    // We only accept messages from ourselves
             if (event.source != window) return;          
