@@ -25,6 +25,7 @@
   "path": "${exepath}",
   "type": "stdio",
   "allowed_origins": [
+    "chrome-extension://hmmnebkieionilgpepijmfabdickmnig/",
     "chrome-extension://hmmnebkieionilgpepijmfabdickmnig/"
   ]
 }

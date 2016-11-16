@@ -213,6 +213,12 @@
     <copy todir="${dist}">
       <fileset dir="${firefoxsrc}" includes="*.xpi" />
     </copy>
+    <!-- Mozilla also likes to see source code for extensions that include native exes -->
+    <delete file="${dist}/${ant.project.name}-src.zip"/>
+    <zip zipfile="${dist}/${ant.project.name}-src.zip">
+      <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles} nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.*" />
+    </zip>
+
     <!-- cleanup -->
     <delete file="${firefoxsrc}/data/install-${ant.project.name}.jar"/>
   </target>

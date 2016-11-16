@@ -26,12 +26,14 @@ function messageHandler(msg) {
     var progressMessage = document.getElementById("progressMessage");
     progressMessage.style.display = "";
     if (msg.error) {
+	removeAllChildren(progressMessage);
+	progressMessage.appendChild(document.createTextNode(msg.error));
 	progressMessage.classList.add("error");
-	progressMessage.innerHTML = msg.error;
 	progressMessage.title = msg.error;
     } else if (msg.string) {
+	removeAllChildren(progressMessage);
+	progressMessage.appendChild(document.createTextNode(msg.string));
 	progressMessage.classList.remove("error");
-	progressMessage.innerHTML = msg.string;
 	progressMessage.title = msg.string;
     }
 
@@ -51,45 +53,49 @@ function messageHandler(msg) {
 
 function listMedia(urls) {
     var praatMediaList = document.getElementById("praatMediaList");
-    // remove all existing children first
-    while (praatMediaList.firstChild) praatMediaList.removeChild(praatMediaList.firstChild);
+    removeAllChildren(praatMediaList);
     document.getElementById("progressMessage").style.display = "none";
     document.getElementById("progress").style.display = "none";
     
     // add new urls
     for (var u in urls)
     {
-        var div = document.createElement("div");
-	div.className = "media"
-	
-        var save = document.createElement("a");
-        save.className = "save";
-        save.download = urls[u].replace(/.*\//, "");
-	save.href = urls[u];
-        save.title = "Save";
-        save.target = "download";
-        var img = document.createElement("img");
-	img.src = "document-save.png";
-	save.appendChild(img);
-        div.appendChild(save);
-	
-        var praat = document.createElement("a");
-        praat.className = "praaturl";
-	praat.href = "#";
-        praat.url = urls[u];
-        praat.title = "Open in Praat";
-        praat.onclick = function() { openInPraat(this.url); };
-	praat.appendChild(document.createTextNode(urls[u]));
-        div.appendChild(praat);
-	
-        praatMediaList.appendChild(div);
+	if (!document.getElementById(urls[u])) {
+            var div = document.createElement("div");
+	    div.className = "media"
+	    
+            var save = document.createElement("a");
+            save.className = "save";
+            save.download = urls[u].replace(/.*\//, "");
+	    save.href = urls[u];
+            save.title = "Save";
+            save.target = "download";
+            var img = document.createElement("img");
+	    img.src = "document-save.png";
+	    save.appendChild(img);
+            div.appendChild(save);
+	    
+            var praat = document.createElement("a");
+            praat.className = "praaturl";
+	    praat.href = "#";
+            praat.url = urls[u];
+            praat.id = urls[u];
+            praat.title = "Open in Praat";
+            praat.onclick = function() { openInPraat(this.url); };
+	    praat.appendChild(document.createTextNode(urls[u]));
+            div.appendChild(praat);
+	    
+            praatMediaList.appendChild(div);
+	}
 	
     } // next url
 }
 
-function openInPraat(url)
-{
+function openInPraat(url) {
     var command = ["praat", "Read from file... " + url, "Edit"];
     sendpraat(command);
 }
 
+function removeAllChildren(element) {
+    while (element.firstChild) element.removeChild(element.firstChild);
+}

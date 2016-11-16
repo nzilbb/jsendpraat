@@ -66,7 +66,7 @@ window.addEventListener("message", function(event) {
 	// from Praat-supporting page
 	switch (event.data.message) {
 	case "PING": // transcript is pinging the extension, so acknowledge...
-	    window.postMessage({ type: 'FROM_PRAAT_EXTENSION', message: 'ACK' }, '*');
+	    window.postMessage({ type: 'FROM_PRAAT_EXTENSION', message: 'ACK', version: 0.91 }, '*');
 	    break;
 	case "sendpraat":
 	    sendpraat(event.data.sendpraat);
@@ -85,13 +85,35 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
     var audioTags = document.getElementsByTagName("audio");
     for (a = 0; a < audioTags.length; a++) {
 	var audio = audioTags[a];
+	if (audio.src) {
+	    if (audio.src.search(/\.wav$/) >= 0)
+	    {
+		if (!urls.includes(audio.src)) {
+		    urls.push(audio.src);
+		}
+	    }
+	    if (audio.src.search(/\.flac$/) >= 0)
+	    {
+		if (!urls.includes(audio.src)) {
+		    urls.push(audio.src);
+		}
+	    }
+	    if (audio.src.search(/\.mp3$/) >= 0)
+	    {
+		if (!urls.includes(audio.src)) {
+		    urls.push(audio.src);
+		}
+	    }
+	}
 	var sources = audio.getElementsByTagName("source");
 	for (s = 0; s < sources.length; s++) {
 	    var source = sources[s];
 	    if (source.type == "audio/wav"
 		|| source.src.search(/\.wav$/) >= 0)
 	    {
-		urls.push(source.src);
+		if (!urls.includes(source.src)) {
+		    urls.push(source.src);
+		}
 	    }
 	} // next <source>	    
 	for (s = 0; s < sources.length; s++) {
@@ -99,7 +121,9 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	    if (source.type == "audio/flac"
 		|| source.src.search(/\.flac$/) >= 0)
 	    {
-		urls.push(source.src);
+		if (!urls.includes(source.src)) {
+		    urls.push(source.src);
+		}
 	    }
 	} // next <source>	    
 	for (s = 0; s < sources.length; s++) {
@@ -107,10 +131,23 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	    if (source.type == "audio/mpeg"
 		|| source.src.search(/\.mp3$/) >= 0)
 	    {
-		urls.push(source.src);
+		if (!urls.includes(source.src)) {
+		    urls.push(source.src);
+		}
 	    }
 	} // next <source>	    
     } // next <audio>
+
+    var anchorTags = document.getElementsByTagName("a");
+    for (a = 0; a < anchorTags.length; a++) {
+	var anchor = anchorTags[a];
+	if (anchor.href.endsWith(".wav") || anchor.href.endsWith(".mp3")) {
+	    if (!urls.includes(anchor.href)) {
+		urls.push(anchor.href);
+	    }
+	}
+    } // next <a>
+
     return urls;
 }
 

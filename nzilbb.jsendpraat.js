@@ -73,6 +73,7 @@ nzilbb.jsendpraat.log = function(message) {
  *  - null otherwise
  */
 nzilbb.jsendpraat.isInstalled = null;
+nzilbb.jsendpraat.version = null;
 
 /**
  * Callback invoked when the jsendpraat extension is detected.
@@ -130,14 +131,16 @@ nzilbb.jsendpraat.isInstalled = null;
  * @callback {uploadResponse} [onUploadResponse] Invoked when the response to an upload() call is received.
  */
 nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatResponse, onProgress, onUploadResponse) {
-    if (window.postMessage) { // extension could be compatible with this browser
+    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    if (!isSafari && window.postMessage) { // extension could be compatible with this browser
         window.addEventListener("message", function(event) {
 	    // We only accept messages from ourselves
             if (event.source != window) return;          
             if (event.data.type == "FROM_PRAAT_EXTENSION") {
 		if (event.data.type && event.data.message == "ACK") {
-		    nzilbb.jsendpraat.log("Praat extension is installed.");
+		    nzilbb.jsendpraat.log("jsendpraat extension is installed: v" + event.data.version);
 		    nzilbb.jsendpraat.isInstalled = true;
+		    nzilbb.jsendpraat.version = event.data.version;
 		    if (onExtensionDetected) onExtensionDetected();
 		} else if (event.data.message == "sendpraat") {
 		    nzilbb.jsendpraat.log("jsendpraat sendpraat: " + event.data);

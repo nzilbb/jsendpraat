@@ -212,7 +212,20 @@ public class HostInstaller
 	    }
 	    case Windows:
 	    {
-	       // we'll just leave it in ~\jsendpraat, but make sure it exists
+	       // put everything in APPDATA
+	       String APPDATA = System.getenv("APPDATA");
+	       if (APPDATA != null)
+	       {
+		  binDir = new File(System.getenv("APPDATA"));
+	       }
+	       else
+	       {
+		  binDir = new File(homeDir, "AppData");
+		  binDir = new File(binDir, "Roaming");
+	       }
+	       binDir = new File(binDir, "jsendpraat");
+	       binDir.mkdir();
+	       manifestDir = binDir;	
 	       break;
 	    }
 	    case Mac:
@@ -247,6 +260,7 @@ public class HostInstaller
 	       error("Could not create manifest directory: " + manifestDir.getPath());
 	    }
 	 }
+	 message("Installing application in: " + binDir.getPath());
 	 progress.setValue(3);
 
 	 // extract executable jar
@@ -292,78 +306,81 @@ public class HostInstaller
 	 }
 	 progress.setValue(5);
 
-	 // extract/update manifest
-	 String extension = "nzilbb.jsendpraat.chrome";
-	 String manifest = extension+".json";
-	 message("Extracting: " + manifest);
-	 File manifestFile = new File(manifestDir, manifest);
-	 URL manifestUrl = getClass().getResource("/"+manifest);
-	 BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
-	 PrintWriter manifestWriter = new PrintWriter(manifestFile);
-	 line = manifestReader.readLine();
-	 while(line != null)
+	 if (manifestDir.exists()) // only if Chrome is installed
 	 {
-	    manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+	    // extract/update manifest
+	    String extension = "nzilbb.jsendpraat.chrome";
+	    String manifest = extension+".json";
+	    message("Extracting: " + manifest);
+	    File manifestFile = new File(manifestDir, manifest);
+	    URL manifestUrl = getClass().getResource("/"+manifest);
+	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
+	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
 	    line = manifestReader.readLine();
-	 } // next line
-	 manifestReader.close();
-	 manifestWriter.close();
-	 
-	 if (os == OS.Windows)
-	 {
-	    progress.setValue(6);
-	    // we need to add an entry to registry
-	    try
+	    while(line != null)
 	    {
-	       String dll = "jRegistryKey.dll";
-	       File dllFile = File.createTempFile("install-jsendpraat.", "."+dll);
-	       dllFile.deleteOnExit();
-	       message("Extracting: " + dllFile.getPath());
-	       URL dllUrl = getClass().getResource("/"+dll);
-	       jarStream = dllUrl.openStream();
-	       outStream = new FileOutputStream(dllFile);
-	       buffer = new byte[1024];
-	       bytesRead = jarStream.read(buffer);
-	       while(bytesRead >= 0)
-	       {
-		  outStream.write(buffer, 0, bytesRead);
-		  bytesRead = jarStream.read(buffer);
-	       } // next chunk of data
-	       jarStream.close();
-	       outStream.close();
-	       System.load(dllFile.getPath());
-	       
-	       RegistryKey r = new RegistryKey(
-		  RootKey.HKEY_CURRENT_USER,
-		  "Software\\Google\\Chrome\\NativeMessagingHosts\\" + extension);
-	       if (!r.exists())
-	       {
-		  message("Windows: creating registry key for " + extension);
-		  r.create();
-	       }
-	       message("Windows: setting registry value to " + manifestFile.getPath());
-	       r.setValue(new RegistryValue(manifestFile.getPath()));
-	    }
-	    catch (Throwable t)
-	    {
-	       message(t.getMessage());
-	       message("Could not set registry directly, falling back to .reg file...");
+	       manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+	       line = manifestReader.readLine();
+	    } // next line
+	    manifestReader.close();
+	    manifestWriter.close();
 	    
-	       // write a registry file
-	       File regFile = new File(manifestDir, "jsendpraat.reg");
-	       PrintWriter regWriter = new PrintWriter(regFile);
-	       regWriter.println("Windows Registry Editor Version 5.00");
-	       regWriter.println();
-	       regWriter.println("[HKEY_CURRENT_USER\\Software\\Google\\Chrome\\NativeMessagingHosts\\nzilbb.jsendpraat.chrome]");
-	       regWriter.println("@=\""+manifestFile.getPath().replace("\\","\\\\")+"\"");
-	       regWriter.close();
-	       
-	       // import it with regedit
-	       String[] cmd = {"cmd","/c","regedit","-s",regFile.getPath()};
-	       Process proc = Runtime.getRuntime().exec(cmd);
-	       proc.waitFor();
+	    if (os == OS.Windows)
+	    {
+	       progress.setValue(6);
+	       // we need to add an entry to registry
+	       try
+	       {
+		  String dll = "jRegistryKey.dll";
+		  File dllFile = File.createTempFile("install-jsendpraat.", "."+dll);
+		  dllFile.deleteOnExit();
+		  message("Extracting: " + dllFile.getPath());
+		  URL dllUrl = getClass().getResource("/"+dll);
+		  jarStream = dllUrl.openStream();
+		  outStream = new FileOutputStream(dllFile);
+		  buffer = new byte[1024];
+		  bytesRead = jarStream.read(buffer);
+		  while(bytesRead >= 0)
+		  {
+		     outStream.write(buffer, 0, bytesRead);
+		     bytesRead = jarStream.read(buffer);
+		  } // next chunk of data
+		  jarStream.close();
+		  outStream.close();
+		  System.load(dllFile.getPath());
+		  
+		  RegistryKey r = new RegistryKey(
+		     RootKey.HKEY_CURRENT_USER,
+		     "Software\\Google\\Chrome\\NativeMessagingHosts\\" + extension);
+		  if (!r.exists())
+		  {
+		     message("Windows: creating registry key for " + extension);
+		     r.create();
+		  }
+		  message("Windows: setting registry value to " + manifestFile.getPath());
+		  r.setValue(new RegistryValue(manifestFile.getPath()));
+	       }
+	       catch (Throwable t)
+	       {
+		  message(t.getMessage());
+		  message("Could not set registry directly, falling back to .reg file...");
+		  
+		  // write a registry file
+		  File regFile = new File(manifestDir, "jsendpraat.reg");
+		  PrintWriter regWriter = new PrintWriter(regFile);
+		  regWriter.println("Windows Registry Editor Version 5.00");
+		  regWriter.println();
+		  regWriter.println("[HKEY_CURRENT_USER\\Software\\Google\\Chrome\\NativeMessagingHosts\\nzilbb.jsendpraat.chrome]");
+		  regWriter.println("@=\""+manifestFile.getPath().replace("\\","\\\\")+"\"");
+		  regWriter.close();
+		  
+		  // import it with regedit
+		  String[] cmd = {"cmd","/c","regedit","-s",regFile.getPath()};
+		  Process proc = Runtime.getRuntime().exec(cmd);
+		  proc.waitFor();
+	       }
 	    }
-	 }
+	 } // chrome is installed
 
 	 progress.setValue(progress.getMaximum());
 	 message("Installation complete.");	 
