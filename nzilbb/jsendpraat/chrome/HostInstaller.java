@@ -240,6 +240,13 @@ public class HostInstaller
 	    }
 	 }
 	 message("Installing manifest and application in: " + manifestDir.getPath());
+	 if (!manifestDir.exists()) 
+	 {
+	    if (!manifestDir.mkdir())
+	    {
+	       error("Could not create manifest directory: " + manifestDir.getPath());
+	    }
+	 }
 	 progress.setValue(3);
 
 	 // extract executable jar
