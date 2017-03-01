@@ -264,7 +264,7 @@ public class HostInstaller
 	       // firefox
 	       File mozillaConfigDir = new File(applicationSupportDir, "Mozilla");
 	       firefoxInstalled = mozillaConfigDir.exists();
-	       manifestDirFirefox = new File(browserConfigDir, "NativeMessagingHosts");
+	       manifestDirFirefox = new File(mozillaConfigDir, "NativeMessagingHosts");
 	       break;
 	    }
 	    default:
