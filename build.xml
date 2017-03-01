@@ -25,7 +25,7 @@
     <mkdir dir="${build}"/>
   </target>
 
-  <target name="all" depends="dist,chromeextension,firefoxextension">
+  <target name="all" depends="dist,chromeextension">
   </target>
   
   <target name="compile" depends="init"
@@ -187,6 +187,7 @@
 
   <target name="firefoxextension" depends="hostinstaller"
 	  description="package the jsendpraat chrome extension">
+    <echo message="The Firefox exension is now deprecated. Firefox supports WebExtensions, so the Chrome extension can be used for Firefox too."/>
     <!-- clean up editor backups -->
     <delete verbose="true">
       <fileset dir=".." includes="**/*~" defaultexcludes="no" />

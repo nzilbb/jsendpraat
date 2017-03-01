@@ -190,11 +190,15 @@ public class HostInstaller
 	 File binDir = new File(homeDir, "jsendpraat");
 	 binDir.mkdir();
 
-	 File manifestDir = binDir;	
+	 File manifestDirChrome = binDir;
+	 boolean chromeInstalled = false;
+	 File manifestDirFirefox = binDir;	
+	 boolean firefoxInstalled = false;
 	 switch (os)
 	 {
 	    case Linux: 
 	    {
+	       // chrome
 	       File configDir = new File(homeDir, ".config");
 	       File browserConfigDir = new File(configDir, "chromium");
 	       if (!browserConfigDir.exists())
@@ -207,7 +211,13 @@ public class HostInstaller
 			+ browserConfigDir.getPath() + " not found.");
 		  }
 	       }
-	       manifestDir = new File(browserConfigDir, "NativeMessagingHosts");
+	       chromeInstalled = browserConfigDir.exists();
+	       manifestDirChrome = new File(browserConfigDir, "NativeMessagingHosts");
+
+	       // firefox
+	       File mozillaDir = new File(homeDir, ".mozilla");
+	       firefoxInstalled = mozillaDir.exists();
+	       manifestDirFirefox = new File(mozillaDir, "native-messaging-hosts");
 	       break;
 	    }
 	    case Windows:
@@ -225,14 +235,18 @@ public class HostInstaller
 	       }
 	       binDir = new File(binDir, "jsendpraat");
 	       binDir.mkdir();
-	       manifestDir = binDir;	
+	       manifestDirChrome = binDir;	
+	       manifestDirFirefox = manifestDirChrome;
+	       chromeInstalled = true;
+	       firefoxInstalled = true;
 	       break;
 	    }
 	    case Mac:
 	    {
+	       // chrome
 	       File libraryDir = new File(homeDir, "Library");
 	       File applicationSupportDir = new File(libraryDir, "Application Support");
-	       File browserConfigDir = new File(libraryDir, "Chromium");
+	       File browserConfigDir = new File(applicationSupportDir, "Chromium");
 	       if (!browserConfigDir.exists())
 	       {
 		  File googleDir = new File(applicationSupportDir, "Google");
@@ -244,7 +258,13 @@ public class HostInstaller
 			+ browserConfigDir.getPath() + " not found.");
 		  }
 	       }
-	       manifestDir = new File(browserConfigDir, "NativeMessagingHosts");
+	       chromeInstalled = browserConfigDir.exists();
+	       manifestDirChrome = new File(browserConfigDir, "NativeMessagingHosts");
+
+	       // firefox
+	       File mozillaConfigDir = new File(applicationSupportDir, "Mozilla");
+	       firefoxInstalled = mozillaConfigDir.exists();
+	       manifestDirFirefox = new File(browserConfigDir, "NativeMessagingHosts");
 	       break;
 	    }
 	    default:
@@ -252,12 +272,20 @@ public class HostInstaller
 	       throw new Exception("Sorry, your operating system is not supported: " + osName);
 	    }
 	 }
-	 message("Installing manifest and application in: " + manifestDir.getPath());
-	 if (!manifestDir.exists()) 
+	 message("Installing chrome manifest in: " + manifestDirChrome.getPath());
+	 if (chromeInstalled && !manifestDirChrome.exists()) 
 	 {
-	    if (!manifestDir.mkdir())
+	    if (!manifestDirChrome.mkdir())
 	    {
-	       error("Could not create manifest directory: " + manifestDir.getPath());
+	       error("Could not create manifest directory: " + manifestDirChrome.getPath());
+	    }
+	 }
+	 message("Installing firefox manifest in: " + manifestDirFirefox.getPath());
+	 if (firefoxInstalled && !manifestDirFirefox.exists()) 
+	 {
+	    if (!manifestDirFirefox.mkdir())
+	    {
+	       error("Could not create manifest directory: " + manifestDirFirefox.getPath());
 	    }
 	 }
 	 message("Installing application in: " + binDir.getPath());
@@ -306,20 +334,24 @@ public class HostInstaller
 	 }
 	 progress.setValue(5);
 
-	 if (manifestDir.exists()) // only if Chrome is installed
+	 if (manifestDirChrome.exists()) // only if Chrome is installed
 	 {
 	    // extract/update manifest
 	    String extension = "nzilbb.jsendpraat.chrome";
 	    String manifest = extension+".json";
 	    message("Extracting: " + manifest);
-	    File manifestFile = new File(manifestDir, manifest);
+	    File manifestFile = new File(manifestDirChrome, manifest);
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
 	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
 	    line = manifestReader.readLine();
 	    while(line != null)
 	    {
-	       manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+	       // skip the allowed_extensions line, which is for Firefox
+	       if (!line.matches(".*allowed_extensions.*"))
+	       {
+		  manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+	       }
 	       line = manifestReader.readLine();
 	    } // next line
 	    manifestReader.close();
@@ -366,7 +398,7 @@ public class HostInstaller
 		  message("Could not set registry directly, falling back to .reg file...");
 		  
 		  // write a registry file
-		  File regFile = new File(manifestDir, "jsendpraat.reg");
+		  File regFile = new File(manifestDirChrome, "jsendpraat.reg");
 		  PrintWriter regWriter = new PrintWriter(regFile);
 		  regWriter.println("Windows Registry Editor Version 5.00");
 		  regWriter.println();
@@ -381,6 +413,86 @@ public class HostInstaller
 	       }
 	    }
 	 } // chrome is installed
+
+	 if (manifestDirFirefox.exists()) // only if Firefox is installed
+	 {
+	    // extract/update manifest
+	    String extension = "nzilbb.jsendpraat.chrome";
+	    String manifest = extension+".json";
+	    message("Extracting: " + manifest);
+	    File manifestFile = new File(manifestDirFirefox, manifest);
+	    URL manifestUrl = getClass().getResource("/"+manifest);
+	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
+	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
+	    line = manifestReader.readLine();
+	    while(line != null)
+	    {
+	       // skip the allowed_origins line, which is for Chrome
+	       if (!line.matches(".*allowed_origins.*"))
+	       {
+		  manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+	       }
+	       line = manifestReader.readLine();
+	    } // next line
+	    manifestReader.close();
+	    manifestWriter.close();
+	    
+	    if (os == OS.Windows)
+	    {
+	       progress.setValue(6);
+	       // we need to add an entry to registry
+	       try
+	       {
+		  String dll = "jRegistryKey.dll";
+		  File dllFile = File.createTempFile("install-jsendpraat.", "."+dll);
+		  dllFile.deleteOnExit();
+		  message("Extracting: " + dllFile.getPath());
+		  URL dllUrl = getClass().getResource("/"+dll);
+		  jarStream = dllUrl.openStream();
+		  outStream = new FileOutputStream(dllFile);
+		  buffer = new byte[1024];
+		  bytesRead = jarStream.read(buffer);
+		  while(bytesRead >= 0)
+		  {
+		     outStream.write(buffer, 0, bytesRead);
+		     bytesRead = jarStream.read(buffer);
+		  } // next chunk of data
+		  jarStream.close();
+		  outStream.close();
+		  System.load(dllFile.getPath());
+		  
+		  RegistryKey r = new RegistryKey(
+		     RootKey.HKEY_CURRENT_USER,
+		     "Software\\Mozilla\\NativeMessagingHosts\\" + extension);
+		  if (!r.exists())
+		  {
+		     message("Windows: creating registry key for " + extension);
+		     r.create();
+		  }
+		  message("Windows: setting registry value to " + manifestFile.getPath());
+		  r.setValue(new RegistryValue(manifestFile.getPath()));
+	       }
+	       catch (Throwable t)
+	       {
+		  message(t.getMessage());
+		  message("Could not set registry directly, falling back to .reg file...");
+		  
+		  // write a registry file
+		  File regFile = new File(manifestDirFirefox, "jsendpraat.reg");
+		  PrintWriter regWriter = new PrintWriter(regFile);
+		  regWriter.println("Windows Registry Editor Version 5.00");
+		  regWriter.println();
+		  regWriter.println("[HKEY_CURRENT_USER\\Software\\Mozilla\\NativeMessagingHosts\\nzilbb.jsendpraat.chrome]");
+		  regWriter.println("@=\""+manifestFile.getPath().replace("\\","\\\\")+"\"");
+		  regWriter.close();
+		  
+		  // import it with regedit
+		  String[] cmd = {"cmd","/c","regedit","-s",regFile.getPath()};
+		  Process proc = Runtime.getRuntime().exec(cmd);
+		  proc.waitFor();
+	       }
+	    }
+	 } // firefox is installed
 
 	 progress.setValue(progress.getMaximum());
 	 message("Installation complete.");	 

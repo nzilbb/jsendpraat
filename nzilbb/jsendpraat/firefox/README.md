@@ -6,4 +6,6 @@ Praat (http://praat.org) is a popular phonetics tool developed by Paul Boersma a
 
 This directory contains code and resources for the Firefox extension.
 
+*NB* *This Firefox exension code is now deprecated.* Firefox supports WebExtensions, so the Chrome extension can be used for Firefox too.
+
 During the build process, cross-browser code/resource are copied/merged here from ../extension
