@@ -1,6 +1,6 @@
 {
     "name": "Praat Integration",
-    "version": "0.93",
+    "version": "0.94",
     "manifest_version": 2,
     "description": "Allows Praat to open media on a page",
     "icons": {
@@ -10,7 +10,7 @@
     "author": "Robert Fromont, NZILBB",
     "applications": {
 	"gecko": {
-	    "id": "jsendpraat@nzilbb.canterbury.ac.nz",
+	    "id": "@jsendpraat",
 	    "strict_min_version": "42.0"
 	}
     },
@@ -36,7 +36,6 @@
 	"install.html",
 	"install-jsendpraat.jar"
     ],
-    "author": "Robert Fromont",
     "permissions": [
 	"tabs", "nativeMessaging"
     ]

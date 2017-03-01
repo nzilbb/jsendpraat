@@ -2,9 +2,8 @@
   "name": "nzilbb.jsendpraat.chrome",
   "description": "Client-side Praat interaction",
   "path": "${exepath}",
-  "type": "stdio",
+  "allowed_extensions": ["@jsendpraat"],    
+  "allowed_origins": ["chrome-extension://hmmnebkieionilgpepijmfabdickmnig/"],
+  "type": "stdio"
     
-  "allowed_extensions": ["jsendpraat@nzilbb.canterbury.ac.nz"]
-    
-  "allowed_origins": ["chrome-extension://hmmnebkieionilgpepijmfabdickmnig/"]
 }
