@@ -612,82 +612,7 @@ public class SendPraat
 	    byte[] bMessage = new byte[(int)messageSize];
 	    stdin.readFully(bMessage);
 	    String strMessage = new String(bMessage);
-	    log("Message: " + strMessage);
-	    JSONObject jsonReply = new JSONObject("{ \"message\":\"sendpraat\", \"error\":\"Invalid message\", \"code\":999}");
-	    String clientRef = null;
-	    try
-	    {
-	       // parse JSON
-	       JSONObject jsonMessage = new JSONObject(strMessage);
-	       if (jsonMessage.has("clientRef"))
-	       {
-		  clientRef = jsonMessage.getString("clientRef");
-	       }
-	       if ("version".equals(jsonMessage.getString("message")))
-	       {
-		  jsonReply.put("message", "version");
-		  jsonReply.put("version", "20160113.1254");
-		  jsonReply.remove("error");
-		  jsonReply.put("code", 0);
-	       }
-	       else
-	       { // assume a sendpraat message
-		  JSONArray jsonArguments = jsonMessage.getJSONArray("sendpraat");
-		  
-		  if (jsonArguments.length() == 0)
-		  {
-		     if ("sendpraat".equals(jsonMessage.getString("message"))) // not for "upload"
-		     {
-			jsonReply.put("error", "sendpraat command was empty");
-			jsonReply.put("code", 500);
-		     }
-		  }
-		  else
-		  { // there are arguments
-		     // get the argments as an array of strings
-		     String argv[] = new String[jsonArguments.length()];
-		     for (int i = 0; i < argv.length; i++)
-		     {
-			// download any HTTP URLs to local files...
-			argv[i] = convertHttpToLocal(jsonArguments.getString(i), stdout, clientRef);
-		     } // next arguments
-		     String reply = sendpraat(argv);
-		     jsonReply.put("error", reply);
-		     if (reply != null) 
-		     { // error
-			jsonReply.put("code", 1);
-		     }
-		     else
-		     { // success
-			jsonReply.put("code", 0);
-		     }
-		  }
-
-		  if ("upload".equals(jsonMessage.getString("message")))
-		  {
-		     jsonReply = processUpload(jsonMessage);
-		  }
-	       } // sendpraat or upload message
-	    }
-	    catch(JSONException exception)
-	    {
-	       logError("Error parsing message: " + exception);
-	       jsonReply.put("error", exception.toString());
-	       jsonReply.put("code", 900);
-	    }
-	    catch(Exception exception)
-	    {
-	       logError("Error: " + exception);
-	       jsonReply.put("error", exception.getMessage());
-	       jsonReply.put("code", 600);
-	    }
-	    if (clientRef != null)
-	    {
-	       jsonReply.put("clientRef", clientRef);
-	    }
-	    // reply to message
-	    String reply = jsonReply.toString();
-	    log("reply: " + reply);
+	    String reply = jsonMessage(strMessage, stdout);
 	    byte[] replyBuffer = reply.getBytes("UTF-8");
 	    if (bSendMessageSize)
 	    {
@@ -712,6 +637,94 @@ public class SendPraat
       log("Goodbye");
       System.exit(0);
    } // end of chromiumHost()
+
+   
+   /**
+    * Process a JSON-encoded message.
+    * @param strMessage
+    * @return The JSON-encoded reply
+    */
+   public String jsonMessage(String strMessage, DataOutputStream stdout)
+   {
+      log("Message: " + strMessage);
+      JSONObject jsonReply = new JSONObject("{ \"message\":\"sendpraat\", \"error\":\"Invalid message\", \"code\":999}");
+      String clientRef = null;
+      try
+      {
+	 // parse JSON
+	 JSONObject jsonMessage = new JSONObject(strMessage);
+	 if (jsonMessage.has("clientRef"))
+	 {
+	    clientRef = jsonMessage.getString("clientRef");
+	 }
+	 if ("version".equals(jsonMessage.getString("message")))
+	 {
+	    jsonReply.put("message", "version");
+	    jsonReply.put("version", "20170301.1633");
+	    jsonReply.remove("error");
+	    jsonReply.put("code", 0);
+	 }
+	 else
+	 { // assume a sendpraat message
+	    JSONArray jsonArguments = jsonMessage.getJSONArray("sendpraat");
+	    
+	    if (jsonArguments.length() == 0)
+	    {
+	       if ("sendpraat".equals(jsonMessage.getString("message"))) // not for "upload"
+	       {
+		  jsonReply.put("error", "sendpraat command was empty");
+		  jsonReply.put("code", 500);
+	       }
+	    }
+	    else
+	    { // there are arguments
+	       // get the argments as an array of strings
+	       String argv[] = new String[jsonArguments.length()];
+	       for (int i = 0; i < argv.length; i++)
+	       {
+		  // download any HTTP URLs to local files...
+		  argv[i] = convertHttpToLocal(jsonArguments.getString(i), stdout, clientRef);
+	       } // next arguments
+	       String reply = sendpraat(argv);
+	       jsonReply.put("error", reply);
+	       if (reply != null) 
+	       { // error
+		  jsonReply.put("code", 1);
+	       }
+	       else
+	       { // success
+		  jsonReply.put("code", 0);
+	       }
+	    }
+	    
+	    if ("upload".equals(jsonMessage.getString("message")))
+	    {
+	       jsonReply = processUpload(jsonMessage);
+	    }
+	 } // sendpraat or upload message
+      }
+      catch(JSONException exception)
+      {
+	 logError("Error parsing message: " + exception);
+	 jsonReply.put("error", exception.toString());
+	 jsonReply.put("code", 900);
+      }
+      catch(Exception exception)
+      {
+	 logError("Error: " + exception);
+	 jsonReply.put("error", exception.getMessage());
+	 jsonReply.put("code", 600);
+      }
+      if (clientRef != null)
+      {
+	 jsonReply.put("clientRef", clientRef);
+      }
+      // reply to message
+      String reply = jsonReply.toString();
+      log("reply: " + reply);
+      return reply;
+   } // end of jsonMessage()
+
    
    /**
     * Converts all http:// and https:// URLs in the given string to local file paths, by downloading the content to a local file.
@@ -783,11 +796,17 @@ public class SendPraat
 			{
 			   ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
 			   replySizeBuffer.putInt(replyBuffer.length);
-			   stdout.write(replySizeBuffer.array(), 0, 4);
+			   if (stdout != null)
+			   {
+			      stdout.write(replySizeBuffer.array(), 0, 4);
+			      stdout.flush();
+			   }
+			}
+			if (stdout != null)
+			{
+			   stdout.write(replyBuffer, 0, replyBuffer.length);			
 			   stdout.flush();
 			}
-			stdout.write(replyBuffer, 0, replyBuffer.length);			
-			stdout.flush();
 		     }
 		     catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
 		     catch(IOException exception) { logError(exception.toString()); }
@@ -814,11 +833,17 @@ public class SendPraat
 		     {
 			ByteBuffer replySizeBuffer = ByteBuffer.allocate(4).order(nativeByteOrder);
 			replySizeBuffer.putInt(replyBuffer.length);
-			stdout.write(replySizeBuffer.array(), 0, 4);
+			if (stdout != null)
+			{
+			   stdout.write(replySizeBuffer.array(), 0, 4);
+			   stdout.flush();
+			}
+		     }
+		     if (stdout != null)
+		     {
+			stdout.write(replyBuffer, 0, replyBuffer.length);			
 			stdout.flush();
 		     }
-		     stdout.write(replyBuffer, 0, replyBuffer.length);			
-		     stdout.flush();
 		  }
 		  catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
 		  catch(IOException exception) { logError(exception.toString()); }
@@ -1066,6 +1091,14 @@ public class SendPraat
 	 for (String a : argv) args += " " + a;
 	 String result = app.sendpraat(argv);
 	 if (result != null) System.out.println(result);
+      }
+      else if (argv[0].startsWith("sendpraatjson://"))
+      {
+	 String reply = app.jsonMessage(
+	    java.net.URLDecoder.decode(
+	       argv[0].substring("sendpraatjson://".length())), null);
+//	 JOptionPane.showMessageDialog(null, reply, "URL", JOptionPane.ERROR_MESSAGE);
+	 System.out.println(reply);
       }
       else
       {
