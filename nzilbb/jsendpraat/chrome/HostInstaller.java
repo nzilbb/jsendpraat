@@ -419,8 +419,11 @@ public class HostInstaller
 	    // extract/update manifest
 	    String extension = "nzilbb.jsendpraat.chrome";
 	    String manifest = extension+".json";
+	    // on Windows, Firefox and Chrome have their manifests in the same directory,
+	    // so we use a different file name for this	    
+	    String manifestFirefox = extension+"-firefox.json";
 	    message("Extracting: " + manifest);
-	    File manifestFile = new File(manifestDirFirefox, manifest);
+	    File manifestFile = new File(manifestDirFirefox, manifestFirefox);
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
 	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
@@ -478,7 +481,7 @@ public class HostInstaller
 		  message("Could not set registry directly, falling back to .reg file...");
 		  
 		  // write a registry file
-		  File regFile = new File(manifestDirFirefox, "jsendpraat.reg");
+		  File regFile = new File(manifestDirFirefox, "jsendpraat-firefox.reg");
 		  PrintWriter regWriter = new PrintWriter(regFile);
 		  regWriter.println("Windows Registry Editor Version 5.00");
 		  regWriter.println();
