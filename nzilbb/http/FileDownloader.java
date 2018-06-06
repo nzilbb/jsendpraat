@@ -1,5 +1,5 @@
 //
-// Copyright 2004-2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2004-2018 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -39,7 +39,7 @@ public class FileDownloader
    static private TemporaryFileStore filesAlreadyDownloaded = new TemporaryFileStore();
 
    /** Maps of successful authorizations, keyed on host name */
-   static private HashMap<String,Vector<String>> hostAuthorizations = new HashMap<String,Vector<String>>();
+   static private HashMap<String,LinkedHashSet<String>> hostAuthorizations = new HashMap<String,LinkedHashSet<String>>();
 
    // Attributes:
    private URL url_;
@@ -149,6 +149,26 @@ public class FileDownloader
 	 };
       messageHandler_ = messageHandler;
    } // end of constructor
+   
+   /**
+    * Constructor
+    */
+   public FileDownloader(URL url, final JProgressBar pb, IMessageHandler messageHandler, String authorization)
+   {
+      url_ = url;
+      pb.setStringPainted(true);
+      pb_ = new IProgressIndicator()
+	 {
+	    public void setMaximum(int max) { pb.setMaximum(max); }
+	    public void setValue(int progress) { pb.setValue(progress); }
+	    public void setString(String s) { pb.setString(s); }
+	    public int getMaximum() { return pb.getMaximum(); }
+	    public int getValue() { return pb.getValue(); }
+	    public String getString() { return pb.getString(); }
+	 };
+      messageHandler_ = messageHandler;
+      addAuthorization(url, authorization);
+   } // end of constructor
 
    /**
     * Constructor
@@ -159,13 +179,40 @@ public class FileDownloader
       pb_ = pb;
       messageHandler_ = messageHandler;
    } // end of constructor
+
+   /**
+    * Constructor
+    */
+   public FileDownloader(URL url, IProgressIndicator pb, IMessageHandler messageHandler, String authorization)
+   {
+      url_ = url;
+      pb_ = pb;
+      messageHandler_ = messageHandler;
+      addAuthorization(url, authorization);
+   } // end of constructor
+
+   
+   /**
+    * Adds an authorization for the host of the given URL.
+    * @param url The URL that the authorization was for.
+    * @param authorization The Authorization HTTP header value.  If this is null or empty, no authorization is added, and the method silently returns.
+    */
+   public static void addAuthorization(URL url, String authorization)
+   {
+      if (authorization == null || authorization.length() == 0) return;
+      if (!hostAuthorizations.containsKey(url.getHost()))
+      {
+	 hostAuthorizations.put(url.getHost(), new LinkedHashSet<String>());
+      }
+      hostAuthorizations.get(url.getHost()).add(authorization);		  
+   } // end of addAuthorization()
    
    /**
     * Returns a (possibly empty) list of authorizations for a given URL.
     * @param url
     * @return A (possibly empty) list of authorizations for a given URL.
     */
-   public static Vector<String> getAuthorizations(URL url)
+   public static Set<String> getAuthorizations(URL url)
    {
       if (hostAuthorizations.containsKey(url.getHost()))
       {
@@ -173,7 +220,7 @@ public class FileDownloader
       }
       else
       {
-	 return new Vector<String>();
+	 return new LinkedHashSet<String>();
       }
    } // end of getAuthorizations()
 
@@ -440,12 +487,7 @@ public class FileDownloader
 	       { 
 		  connection.getInputStream(); // maybe throws exception
 
-		  // if we get this far, it worked, so remember the authorization for next time
-		  if (!hostAuthorizations.containsKey(url.getHost()))
-		  {
-		     hostAuthorizations.put(url.getHost(), new Vector<String>());
-		  }
-		  hostAuthorizations.get(url.getHost()).add(authorization);		  
+		  addAuthorization(url, authorization);		  
 
 		  return connection;
 	       }

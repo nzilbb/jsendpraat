@@ -33,7 +33,7 @@
  *
  * @author Robert Fromont robert.fromont@canterbury.ac.nz
  * @license magnet:?xt=urn:btih:1f739d935676111cfff4b4693e3816e664797050&dn=gpl-3.0.txt GPL v3.0
- * @copyright 2016 New Zealand Institute of Language, Brain and Behaviour, University of Canterbury
+ * @copyright 2016-2018 New Zealand Institute of Language, Brain and Behaviour, University of Canterbury
  *
  *    This file is part of jsendpraat.
  *
@@ -189,10 +189,11 @@ nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatRes
  *  This can be a single string for a one-line script (e.g. "Quit") or an array of strings 
  *  for multiline scripts (e.g. ["Read from file... http://myserver/myfile.wav, "Edit"]). 
  *  If it's an array, the first element may be the target program - i.e. "praat" or "als".
+ * @param {string} authorization The Authorization header to be sent with any HTTP requests. 
  * @returns false if the a connection to the extension has not been previously established,
  *  or script is null, or true otherwise.
  */
-nzilbb.jsendpraat.sendpraat = function(script) {
+nzilbb.jsendpraat.sendpraat = function(script, authorization) {
     if (!nzilbb.jsendpraat.isInstalled) return false;
     // ensure the script is an array whose firest element is "praat" or "als"
     if (!script) return false;
@@ -207,9 +208,10 @@ nzilbb.jsendpraat.sendpraat = function(script) {
     }
     window.postMessage(
         { 
-            type: "FROM_PRAAT_PAGE", 
-            message: "sendpraat",
-            sendpraat: script
+            "type": "FROM_PRAAT_PAGE", 
+            "message": "sendpraat",
+            "sendpraat": script,
+	    "authorization": authorization
         }, '*');
     return true;
 }
@@ -225,10 +227,11 @@ nzilbb.jsendpraat.sendpraat = function(script) {
  * @param {string} fileParameter name of file HTTP parameter.
  * @param {string} fileUrl original URL for the file to upload.
  * @param {Object} otherParameters extra HTTP request parameters.
+ * @param {string} authorization The Authorization header to be sent with any HTTP requests. 
  * @returns false if the a connection to the extension has not been previously established,
  *  or script is null, or true otherwise.
  */
-nzilbb.jsendpraat.upload = function(script, uploadUrl, fileParameter, fileUrl, otherParameters) {
+nzilbb.jsendpraat.upload = function(script, uploadUrl, fileParameter, fileUrl, otherParameters, authorization) {
     if (!nzilbb.jsendpraat.isInstalled) return false;
     // ensure the script is an array whose firest element is "praat" or "als"
     if (script) {
@@ -244,13 +247,14 @@ nzilbb.jsendpraat.upload = function(script, uploadUrl, fileParameter, fileUrl, o
     }
     window.postMessage(
         { 
-            type: "FROM_PRAAT_PAGE", 
-            message: "upload",
-            sendpraat: script,
-	    uploadUrl : uploadUrl,
-	    fileParameter : fileParameter, 
-	    fileUrl : fileUrl, // original URL for the file to upload
-	    otherParameters : otherParameters
+            "type": "FROM_PRAAT_PAGE", 
+            "message": "upload",
+            "sendpraat": script,
+	    "uploadUrl" : uploadUrl,
+	    "fileParameter" : fileParameter, 
+	    "fileUrl" : fileUrl, // original URL for the file to upload
+	    "otherParameters" : otherParameters,
+	    "authorization": authorization
         }, '*');
     return true;
 }

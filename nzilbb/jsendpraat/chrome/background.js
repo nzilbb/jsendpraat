@@ -1,5 +1,5 @@
 //
-// Copyright 2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2018 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -20,11 +20,11 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
-var debug = false;
+var debug = true;
 
 // host version checking
 var hostVersion = null;
-var hostVersionMin = "20151125.1824";
+var hostVersionMin = "20180606.1040";
 
 // host communication
 var praatPort = null;

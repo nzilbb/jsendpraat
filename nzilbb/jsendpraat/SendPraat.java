@@ -1,5 +1,5 @@
 //
-// Copyright 2004-2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2004-2018 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -86,7 +86,8 @@ import nzilbb.http.HttpRequestPostMultipart;
  *        "fileParameter" : <var>fileParameter</var>, // name of file HTTP parameter
  *        "fileUrl" : <var>fileUrl</var>, // original URL of the downloaded file
  *        "otherParameters" : <var>otherParameters</var> // extra HTTP request parameters
- *        "clientRef" : <var>reference</var> // an optional reference string that's passed back to the client
+ *        "clientRef" : <var>reference</var>, // an optional reference string that's passed back to the client
+ *        "authorization" : <var>authorization</var> // HTTP Authorization header
  *    }
  *  </pre></li>
  * </ul>
@@ -572,7 +573,8 @@ public class SendPraat
     *        "fileParameter" : <var>fileParameter</var>, // name of file HTTP parameter
     *        "fileUrl" : <var>fileUrl</var>, // original URL of the downloaded file
     *        "otherParameters" : <var>otherParameters</var>, // extra HTTP request parameters
-    *        "clientRef" : <var>reference</var> // an optional reference string that's passed back to the client
+    *        "clientRef" : <var>reference</var>, // an optional reference string that's passed back to the client
+    *        "authorization" : <var>authorization</var> // HTTP Authorization header
     *    }
     *  </pre>
     * <p>The response is written in JSON to stdout (prefixed by a 4-byte message size indicator)
@@ -657,10 +659,15 @@ public class SendPraat
 	 {
 	    clientRef = jsonMessage.getString("clientRef");
 	 }
+	 String authorization = null;
+	 if (jsonMessage.has("authorization"))
+	 {
+	    authorization = jsonMessage.getString("authorization");
+	 }
 	 if ("version".equals(jsonMessage.getString("message")))
 	 {
 	    jsonReply.put("message", "version");
-	    jsonReply.put("version", "20170301.1633");
+	    jsonReply.put("version", "20180606.1040");
 	    jsonReply.remove("error");
 	    jsonReply.put("code", 0);
 	 }
@@ -683,7 +690,7 @@ public class SendPraat
 	       for (int i = 0; i < argv.length; i++)
 	       {
 		  // download any HTTP URLs to local files...
-		  argv[i] = convertHttpToLocal(jsonArguments.getString(i), stdout, clientRef);
+		  argv[i] = convertHttpToLocal(jsonArguments.getString(i), stdout, clientRef, authorization);
 	       } // next arguments
 	       String reply = sendpraat(argv);
 	       jsonReply.put("error", reply);
@@ -699,7 +706,7 @@ public class SendPraat
 	    
 	    if ("upload".equals(jsonMessage.getString("message")))
 	    {
-	       jsonReply = processUpload(jsonMessage);
+	       jsonReply = processUpload(jsonMessage, authorization);
 	    }
 	 } // sendpraat or upload message
       }
@@ -731,10 +738,11 @@ public class SendPraat
     * @param s The command to convert.
     * @param stdout For reporting progress.
     * @param clientRef Reference to pass back to the client on progress updates.
+    * @param authorization Authorization header to send with HTTP requests, if any.
     * @return The given string, with all HTTP URLs converted to local paths where possible.
     * @throws Exception If something goes wrong during download.
     */
-   public String convertHttpToLocal(String s, final DataOutputStream stdout, final String clientRef)
+   public String convertHttpToLocal(String s, final DataOutputStream stdout, final String clientRef, String authorization)
       throws Exception
    {
       Matcher httpUrlMatcher = httpUrlPattern.matcher(s);
@@ -848,7 +856,7 @@ public class SendPraat
 		  catch(UnsupportedEncodingException exception) { logError(exception.toString()); }
 		  catch(IOException exception) { logError(exception.toString()); }
 	       }
-	    });
+	    }, authorization);
 	 synchronized (downloader)
 	 {
 	    downloader.start();
@@ -889,14 +897,17 @@ public class SendPraat
    /**
     * Processes a file (TextGrid) upload request.
     * @param jsonMessage
+    * @param authorization Authorization header to send with HTTP requests, if any.
     * @return Reply to return to the caller.
     */
-   public JSONObject processUpload(JSONObject jsonMessage)
+   public JSONObject processUpload(JSONObject jsonMessage, String authorization)
    {
       JSONObject jsonReply = new JSONObject("{ \"message\":\"upload\", \"error\":\"Invalid upload\", \"code\":999}");
       try
       {
 	 URL uploadUrl = new URL(jsonMessage.getString("uploadUrl"));
+	 // add authorization to possibilities for retrieval below...
+	 FileDownloader.addAuthorization(uploadUrl, authorization);
 	 URL fileUrl = new URL(jsonMessage.getString("fileUrl"));
 	 File file = FileDownloader.getDownloadedFile(fileUrl);
 	 if (file == null) throw new Exception("There is no local file for: " + fileUrl);
@@ -916,15 +927,15 @@ public class SendPraat
 	    connection.disconnect();
 	    if (connection.getResponseCode() == HttpURLConnection.HTTP_UNAUTHORIZED)
 	    {	    
-	       for (String authorization : FileDownloader.getAuthorizations(uploadUrl))
+	       for (String authorizationCandidate : FileDownloader.getAuthorizations(uploadUrl))
 	       {
 		  connection = (HttpURLConnection)uploadUrl.openConnection();
 		  try
 		  {
-		     connection.setRequestProperty("Authorization", authorization);
+		     connection.setRequestProperty("Authorization", authorizationCandidate);
 		     connection.getInputStream(); // throws exception if unauthorized
 		     connection.disconnect();
-		     auth = authorization;
+		     auth = authorizationCandidate;
 		     break;
 		  }
 		  catch(Exception exception)
@@ -934,7 +945,7 @@ public class SendPraat
 	       } // next possible authorization
 	    } // unauthorized
 	 } // catch
-	 log("uploading... " + auth); // TODO remove auth logging
+	 log("uploading... ");
 	 // now run the real request
 	 HttpRequestPostMultipart postRequest = new HttpRequestPostMultipart(uploadUrl, auth);
 	 postRequest.setHeader("Accept", "application/json");

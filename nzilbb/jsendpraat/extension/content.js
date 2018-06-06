@@ -1,5 +1,5 @@
 //
-// Copyright 2016 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2016-2018 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -25,22 +25,24 @@
 var debug = false;
 
 // send a script to praat
-function sendpraat(script) {
+function sendpraat(script, authorization) {
     postMessageToBackground({
 	"message" : "sendpraat", 
-	"sendpraat" : script
+	"sendpraat" : script,
+	"authorization" : authorization // HTTP Authorization header
     });
 }
 
 // upload a praat-edited TextGrid file to the server
-function upload(sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters) {
+function upload(sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters, authorization) {
     postMessageToBackground({
 	"message" : "upload", 
 	"sendpraat" : sendpraat, // script to run first
 	"uploadUrl" : uploadUrl, // URL to upload to
 	"fileParameter" : fileParameter, // name of file HTTP parameter
 	"fileUrl" : fileUrl, // original URL for the file to upload
-	"otherParameters" : otherParameters // extra HTTP request parameters
+	"otherParameters" : otherParameters, // extra HTTP request parameters
+	"authorization" : authorization // HTTP Authorization header
     });
 }
 
@@ -66,13 +68,13 @@ window.addEventListener("message", function(event) {
 	// from Praat-supporting page
 	switch (event.data.message) {
 	case "PING": // transcript is pinging the extension, so acknowledge...
-	    window.postMessage({ type: 'FROM_PRAAT_EXTENSION', message: 'ACK', version: 0.91 }, '*');
+	    window.postMessage({ type: 'FROM_PRAAT_EXTENSION', message: 'ACK', version: 0.97 }, '*');
 	    break;
 	case "sendpraat":
-	    sendpraat(event.data.sendpraat);
+	    sendpraat(event.data.sendpraat, event.data.authorization);
 	    break;
 	case "upload":
-	    upload(event.data.sendpraat, event.data.uploadUrl, event.data.fileParameter, event.data.fileUrl, event.data.otherParameters);
+	    upload(event.data.sendpraat, event.data.uploadUrl, event.data.fileParameter, event.data.fileUrl, event.data.otherParameters, event.data.authorization);
 	    break;
 	} // switch on event.data.message
     } // FROM_PRAAT_PAGE

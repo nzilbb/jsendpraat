@@ -70,7 +70,7 @@ function setButtonForTab(tabId) {
 }
 
 // send a message to the host process to forward to Praat
-function sendpraat(tabId, script) {
+function sendpraat(tabId, script, authorization) {
     if (debug) console.log("tab " + tabId + " script: " + script);
     if (!tabMedia[tabId]) return;
 
@@ -78,13 +78,14 @@ function sendpraat(tabId, script) {
     var message = {
 	"message" : "sendpraat",
 	"sendpraat" : script,
-	"clientRef" : tabId
+	"clientRef" : tabId,
+	"authorization" : authorization // HTTP Authorization header
     };
     sendToHost(message);
 }
 
 // send a message to the host process to upload a TextGrid
-function upload(tabId, sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters) {
+function upload(tabId, sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters, authorization) {
     if (debug) console.log("tab " + tabId + " upload: " + uploadUrl);
     checkHost();
     var message =  {
@@ -94,7 +95,8 @@ function upload(tabId, sendpraat, uploadUrl, fileParameter, fileUrl, otherParame
         "fileParameter" : fileParameter,
         "fileUrl" : fileUrl,
         "otherParameters" : otherParameters,
-        "clientRef" : tabId
+        "clientRef" : tabId,
+	"authorization" : authorization // HTTP Authorization header
     };
     sendToHost(message);
 }
@@ -110,11 +112,11 @@ function handleMessage(worker, msg) {
 	break;
     case "sendpraat":
 	if (debug) console.log("sendpraat " + msg.sendpraat);
-	sendpraat(tabId, msg.sendpraat);
+	sendpraat(tabId, msg.sendpraat, msg.authorization);
 	break;
     case "upload":
 	if (debug) console.log("upload " + msg.fileUrl + " to " + msg.uploadUrl);
-	upload(tabId, msg.sendpraat, msg.uploadUrl, msg.fileParameter, msg.fileUrl, msg.otherParameters);
+	upload(tabId, msg.sendpraat, msg.uploadUrl, msg.fileParameter, msg.fileUrl, msg.otherParameters, msg.authorization);
 	break;
     }
 }

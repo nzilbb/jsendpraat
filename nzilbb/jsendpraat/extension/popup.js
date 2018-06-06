@@ -93,7 +93,7 @@ function listMedia(urls) {
 
 function openInPraat(url) {
     var command = ["praat", "Read from file... " + url, "Edit"];
-    sendpraat(command);
+    sendpraat(command); // TODO how would I know the Authorizataion header value?
 }
 
 function removeAllChildren(element) {

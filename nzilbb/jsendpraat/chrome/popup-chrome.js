@@ -31,12 +31,12 @@ document.addEventListener('DOMContentLoaded', function () {
     listMedia(urls);
 });
 
-function sendpraat(script)
-{
+function sendpraat(script, authorization) {
     background.postMessage(
 	{
 	    "message" : "sendpraat", 
-	    "sendpraat" : script
+	    "sendpraat" : script,
+	    "authorization" : authorization // HTTP Authorization header
 	});
 }
 
