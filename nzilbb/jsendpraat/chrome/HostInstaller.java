@@ -311,21 +311,38 @@ public class HostInstaller
 	 progress.setValue(4);
 
 	 // extract/update execution script
-	 String hostScript = os == OS.Windows?"jsendpraat.bat":"jsendpraat.sh";
+	 String hostScript = os == OS.Windows?"jsendpraat.bat":os == OS.Mac?"WebSendPraatMacx86_64":"jsendpraat.sh";
 	 message("Extracting: " + hostScript);
 	 File hostScriptFile = new File(binDir, hostScript);
 	 URL hostScriptUrl = getClass().getResource("/"+hostScript);
-	 BufferedReader hostScriptReader = new BufferedReader(new InputStreamReader(hostScriptUrl.openStream()));
-	 PrintWriter hostScriptWriter = new PrintWriter(hostScriptFile);
-	 String line = hostScriptReader.readLine();
-	 while(line != null)
-	 {
-	    hostScriptWriter.println(
-	       line.replace("${jarpath}", hostJarFile.getPath()));
-	    line = hostScriptReader.readLine();
-	 } // next line
-	 hostScriptReader.close();
-	 hostScriptWriter.close();
+	 if (os == OS.Mac)
+	 { // executable program, just copy it
+	    InputStream input = hostScriptUrl.openStream();
+	    FileOutputStream output = new FileOutputStream(hostScriptFile);
+	    bytesRead = input.read(buffer);
+	    while (bytesRead >= 0)
+	    {
+	       output.write(buffer, 0, bytesRead);
+	       bytesRead = input.read(buffer);
+	    } // next chunk	
+	    output.flush();
+	    output.close();
+	    input.close();
+	 }
+	 else
+	 { // others are a shell script that needs re-writing on the way through
+	    BufferedReader hostScriptReader = new BufferedReader(new InputStreamReader(hostScriptUrl.openStream()));
+	    PrintWriter hostScriptWriter = new PrintWriter(hostScriptFile);
+	    String line = hostScriptReader.readLine();
+	    while(line != null)
+	    {
+	       hostScriptWriter.println(
+		  line.replace("${jarpath}", hostJarFile.getPath()));
+	       line = hostScriptReader.readLine();
+	    } // next line
+	    hostScriptReader.close();
+	    hostScriptWriter.close();
+	 }
 
 	 // mark script as executable
 	 if (os != OS.Windows)
@@ -344,7 +361,7 @@ public class HostInstaller
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
 	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
-	    line = manifestReader.readLine();
+	    String line = manifestReader.readLine();
 	    while(line != null)
 	    {
 	       // skip the allowed_extensions line, which is for Firefox
@@ -427,7 +444,7 @@ public class HostInstaller
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
 	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
-	    line = manifestReader.readLine();
+	    String line = manifestReader.readLine();
 	    while(line != null)
 	    {
 	       // skip the allowed_origins line, which is for Chrome
