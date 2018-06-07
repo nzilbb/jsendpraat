@@ -94,7 +94,7 @@
       </manifest>
       
       <!-- include native libraries -->
-      <fileset dir="${src}" includes="nzilbb/jsendpraat/libsendpraat*" />
+      <fileset dir="${src}" includes="nzilbb/jsendpraat/libsendpraat* nzilbb/jsendpraat/WebSendPraat*" />
 
       <!-- include source code -->
       <fileset dir="${src}" includes="${srcfiles} nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.*" />
