@@ -1,5 +1,5 @@
 //
-// Copyright 2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2018 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -436,9 +436,10 @@ public class HostInstaller
 	    // extract/update manifest
 	    String extension = "nzilbb.jsendpraat.chrome";
 	    String manifest = extension+".json";
+	    String manifestFirefox = manifest;
 	    // on Windows, Firefox and Chrome have their manifests in the same directory,
-	    // so we use a different file name for this	    
-	    String manifestFirefox = extension+"-firefox.json";
+	    // so we use a different file name for this
+	    if (os == OS.Windows) manifestFirefox = extension+"-firefox.json";
 	    message("Extracting: " + manifest);
 	    File manifestFile = new File(manifestDirFirefox, manifestFirefox);
 	    URL manifestUrl = getClass().getResource("/"+manifest);
