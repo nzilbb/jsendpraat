@@ -19,5 +19,10 @@
 #    along with jsendpraat; if not, write to the Free Software
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-# Runs the jsendpraat.jar chrome extension host for praat integration
-java -jar "${jarpath}" "$1" "$2"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Runs the jsendpraat.jar chrome extension host for praat integration
+    "${jarpath}" "$1" "$2" 2>"${jarpath}.log"
+else
+    # Runs the jsendpraat.jar chrome extension host for praat integration
+    java -jar "${jarpath}" "$1" "$2"
+fi

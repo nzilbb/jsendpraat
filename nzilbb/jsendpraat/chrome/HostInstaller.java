@@ -291,8 +291,8 @@ public class HostInstaller
 	 message("Installing application in: " + binDir.getPath());
 	 progress.setValue(3);
 
-	 // extract executable jar
-	 String hostJar = "jsendpraat.jar";
+	 // extract executable jar/exe
+	 String hostJar = os == OS.Mac?"WebSendPraatMacx86_64":"jsendpraat.jar";
 	 message("Extracting: " + hostJar);
 	 File hostJarFile = new File(binDir, hostJar);
 	 URL hostJarUrl = getClass().getResource("/"+hostJar);
@@ -307,42 +307,29 @@ public class HostInstaller
 	 } // next chunk of data
 	 jarStream.close();
 	 outStream.close();
+	 if (os == OS.Mac)
+	 {
+	    makeExecutable(hostJarFile);
+	 }
 
 	 progress.setValue(4);
 
 	 // extract/update execution script
-	 String hostScript = os == OS.Windows?"jsendpraat.bat":os == OS.Mac?"WebSendPraatMacx86_64":"jsendpraat.sh";
+	 String hostScript = os == OS.Windows?"jsendpraat.bat":"jsendpraat.sh";
 	 message("Extracting: " + hostScript);
 	 File hostScriptFile = new File(binDir, hostScript);
 	 URL hostScriptUrl = getClass().getResource("/"+hostScript);
-	 if (os == OS.Mac)
-	 { // executable program, just copy it
-	    InputStream input = hostScriptUrl.openStream();
-	    FileOutputStream output = new FileOutputStream(hostScriptFile);
-	    bytesRead = input.read(buffer);
-	    while (bytesRead >= 0)
-	    {
-	       output.write(buffer, 0, bytesRead);
-	       bytesRead = input.read(buffer);
-	    } // next chunk	
-	    output.flush();
-	    output.close();
-	    input.close();
-	 }
-	 else
-	 { // others are a shell script that needs re-writing on the way through
-	    BufferedReader hostScriptReader = new BufferedReader(new InputStreamReader(hostScriptUrl.openStream()));
-	    PrintWriter hostScriptWriter = new PrintWriter(hostScriptFile);
-	    String line = hostScriptReader.readLine();
-	    while(line != null)
-	    {
-	       hostScriptWriter.println(
-		  line.replace("${jarpath}", hostJarFile.getPath()));
-	       line = hostScriptReader.readLine();
-	    } // next line
-	    hostScriptReader.close();
-	    hostScriptWriter.close();
-	 }
+	 BufferedReader hostScriptReader = new BufferedReader(new InputStreamReader(hostScriptUrl.openStream()));
+	 PrintWriter hostScriptWriter = new PrintWriter(hostScriptFile);
+	 String line = hostScriptReader.readLine();
+	 while(line != null)
+	 {
+	    hostScriptWriter.println(
+	       line.replace("${jarpath}", hostJarFile.getPath()));
+	    line = hostScriptReader.readLine();
+	 } // next line
+	 hostScriptReader.close();
+	 hostScriptWriter.close();
 
 	 // mark script as executable
 	 if (os != OS.Windows)
@@ -353,6 +340,28 @@ public class HostInstaller
 
 	 if (manifestDirChrome.exists()) // only if Chrome is installed
 	 {
+	    // first ensure any old manifests are deleted
+	    String[] otherPossibleOldManifests = {
+	       "nzilbb.chrome.jsendpraat.json",
+	       "nzilbb.chrome.jsendpraat-firefox.json",
+	       "nzilbb.jsendpraat.chrome-firefox.json"
+	    };
+	    for (String fileName : otherPossibleOldManifests)
+	    {
+	       File toDelete = new File(manifestDirChrome, fileName);
+	       if (toDelete.exists())
+	       {
+		  if (toDelete.delete())
+		  {
+		     message("Deleted " + toDelete.getPath());
+		  }
+		  else
+		  {
+		     message("Could not delete " + toDelete.getPath());
+		  }
+	       }
+	    }
+	    	    
 	    // extract/update manifest
 	    String extension = "nzilbb.jsendpraat.chrome";
 	    String manifest = extension+".json";
@@ -361,7 +370,7 @@ public class HostInstaller
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
 	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
-	    String line = manifestReader.readLine();
+	    line = manifestReader.readLine();
 	    while(line != null)
 	    {
 	       // skip the allowed_extensions line, which is for Firefox
@@ -433,6 +442,28 @@ public class HostInstaller
 
 	 if (manifestDirFirefox.exists()) // only if Firefox is installed
 	 {
+	    // first ensure any old manifests are deleted
+	    String[] otherPossibleOldManifests = {
+	       "nzilbb.chrome.jsendpraat.json",
+	       "nzilbb.chrome.jsendpraat-firefox.json",
+	       "nzilbb.jsendpraat.chrome-firefox.json"
+	    };
+	    for (String fileName : otherPossibleOldManifests)
+	    {
+	       File toDelete = new File(manifestDirChrome, fileName);
+	       if (toDelete.exists())
+	       {
+		  if (toDelete.delete())
+		  {
+		     message("Deleted " + toDelete.getPath());
+		  }
+		  else
+		  {
+		     message("Could not delete " + toDelete.getPath());
+		  }
+	       }
+	    }
+	    	    
 	    // extract/update manifest
 	    String extension = "nzilbb.jsendpraat.chrome";
 	    String manifest = extension+".json";
@@ -445,7 +476,7 @@ public class HostInstaller
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
 	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
-	    String line = manifestReader.readLine();
+	    line = manifestReader.readLine();
 	    while(line != null)
 	    {
 	       // skip the allowed_origins line, which is for Chrome
