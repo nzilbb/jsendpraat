@@ -36,8 +36,8 @@
 	   includes="${srcfiles}"
 	   listfiles="yes"
 	   includeantruntime="false"
-	   target="6"
-	   source="6"
+	   target="8"
+	   source="8"
 	   debug="on"
 	   >
       <compilerarg value="-Xlint"/>
@@ -108,7 +108,6 @@
 	     storetype="${key.storetype}"
 	     storepass="${key.storepass}"
 	     keypass="${key.keypass}"
-	     tsaurl="${key.tsaurl}"
 	     />
     <chmod file="${dist}/${ant.project.name}.jar" perm="u+rx"/>    
     <delete dir="${build}"/>
@@ -152,7 +151,6 @@
 	     storetype="${key.storetype}"
 	     storepass="${key.storepass}"
 	     keypass="${key.keypass}"
-	     tsaurl="${key.tsaurl}"
 	     />
     <chmod file="${dist}/install-${ant.project.name}.jar" perm="u+rx"/>    
     <delete dir="${build}"/>    
