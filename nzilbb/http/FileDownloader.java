@@ -479,8 +479,8 @@ public class FileDownloader
 	       String password = new String(txtPassword.getPassword());
 	       if (password.length() == 0) break;
 	       username = txtUsername.getText();
-	       authorization = "Basic " 
-		  + new sun.misc.BASE64Encoder().encode((username+":"+password).getBytes());
+	       authorization = "Basic " + java.util.Base64.getEncoder()
+                  .encodeToString((username+":"+password).getBytes());
 	       connection = (HttpURLConnection)url.openConnection();
 	       connection.setRequestProperty("Authorization", authorization);
 	       try 
