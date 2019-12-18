@@ -269,15 +269,15 @@ public class UtilityApp
 		     }
 		     else if (parameterClass.equals(Boolean.class))
 		     {
-			setter.invoke(this, new Boolean(sValue));
+			setter.invoke(this, Boolean.valueOf(sValue));
 		     }
 		     else if (parameterClass.equals(Integer.class))
 		     {
-			setter.invoke(this, new Integer(sValue));
+			setter.invoke(this, Integer.valueOf(sValue));
 		     }
 		     else if (parameterClass.equals(Double.class))
 		     {
-			setter.invoke(this, new Double(sValue));
+			setter.invoke(this, Double.valueOf(sValue));
 		     }
 		     else if (parameterClass.equals(URL.class))
 		     {
@@ -499,15 +499,15 @@ public class UtilityApp
 		  }
 		  else if (parameterClass.equals(Boolean.class))
 		  {
-		     setter.invoke(this, new Boolean(sValue));
+		     setter.invoke(this, Boolean.valueOf(sValue));
 		  }
 		  else if (parameterClass.equals(Integer.class))
 		  {
-		     setter.invoke(this, new Integer(sValue));
+		     setter.invoke(this, Integer.valueOf(sValue));
 		  }
 		  else if (parameterClass.equals(Double.class))
 		  {
-		     setter.invoke(this, new Boolean(sValue));
+		     setter.invoke(this, Boolean.valueOf(sValue));
 		  }
 		  else if (parameterClass.equals(URL.class))
 		  {
@@ -574,15 +574,15 @@ public class UtilityApp
 			}
 			else if (parameterClass.equals(Boolean.class))
 			{
-			   setter.invoke(this, new Boolean(sValue));
+			   setter.invoke(this, Boolean.valueOf(sValue));
 			}
 			else if (parameterClass.equals(Integer.class))
 			{
-			   setter.invoke(this, new Integer(sValue));
+			   setter.invoke(this, Integer.valueOf(sValue));
 			}
 			else if (parameterClass.equals(Double.class))
 			{
-			   setter.invoke(this, new Boolean(sValue));
+			   setter.invoke(this, Boolean.valueOf(sValue));
 			}
 			else if (parameterClass.equals(URL.class))
 			{
