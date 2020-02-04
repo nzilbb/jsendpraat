@@ -28,7 +28,9 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.BufferedReader;
 import java.io.PrintWriter;
+import java.net.URI;
 import java.net.URL;
+import java.util.jar.JarFile;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import javax.swing.BorderFactory;
@@ -143,6 +145,27 @@ public class HostInstaller
       buttons.add(cancel);
 
       add(buttons);
+
+      // Report our version if possible - it's a comment on the jar file
+      URL url = getClass().getResource(getClass().getSimpleName() + ".class");
+      String sUrl = url.toString();
+      if (sUrl.startsWith("jar:"))
+      {
+         int iUriStart = 4;
+         int iUriEnd = sUrl.indexOf("!");
+         String sFileUri = sUrl.substring(iUriStart, iUriEnd);
+         System.out.println("sFileUri " + sFileUri);
+         try
+         {
+            File fJar = new File(new URI(sFileUri));
+            JarFile jfJar = new JarFile(fJar);
+            String comment = jfJar.getComment();
+            if (comment != null) System.out.println(comment);
+            
+         }
+         catch(Exception exception)
+         {}
+      }
    }
 
    /** Execution */
