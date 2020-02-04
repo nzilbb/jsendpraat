@@ -84,7 +84,8 @@
     
     <!-- Put everything in ${build} into the ${ant.project.name}.jar file -->
     <jar jarfile="${dist}/${ant.project.name}.jar" 
-	 basedir="${build}">
+	 basedir="${build}"
+         comment="version ${DSTAMP}.${TSTAMP}">
       <manifest>
 	<attribute name="Main-Class" value="${mainclass}"/>
 	<attribute name="Application-Name" value="${ant.project.description}"/>
@@ -128,7 +129,8 @@
       <compilerarg value="-Xlint"/>
     </javac>
     <jar jarfile="${dist}/install-${ant.project.name}.jar" 
-	 basedir="${build}/install">
+	 basedir="${build}/install"
+         comment="version ${DSTAMP}.${TSTAMP}">
       <manifest>
 	<attribute name="Main-Class" value="${installermainclass}"/>
 	<attribute name="Application-Name" value="${installerdescription}"/>
