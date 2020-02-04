@@ -154,7 +154,6 @@ public class HostInstaller
          int iUriStart = 4;
          int iUriEnd = sUrl.indexOf("!");
          String sFileUri = sUrl.substring(iUriStart, iUriEnd);
-         System.out.println("sFileUri " + sFileUri);
          try
          {
             File fJar = new File(new URI(sFileUri));
@@ -287,29 +286,50 @@ public class HostInstaller
 	       throw new Exception("Sorry, your operating system is not supported: " + osName);
 	    }
 	 }
-	 if (chromiumInstalled && !manifestDirChromium.exists()) 
-	 {
-            message("Installing chromium manifest in: " + manifestDirChromium.getPath());
-	    if (!manifestDirChromium.mkdir())
-	    {
-	       error("Could not create manifest directory: " + manifestDirChromium.getPath());
-	    }
+	 if (chromiumInstalled)
+         {
+            if (!manifestDirChromium.exists()) 
+            {
+               message("Installing chromium manifest in: " + manifestDirChromium.getPath());
+               if (!manifestDirChromium.mkdir())
+               {
+                  error("Could not create manifest directory: " + manifestDirChromium.getPath());
+               }
+            }
+            else
+            {
+               message("Chromium manifest is already in: " + manifestDirChromium.getPath());
+            }
 	 }
-	 if (chromeInstalled && !manifestDirChrome.exists()) 
-	 {
-            message("Installing chrome manifest in: " + manifestDirChrome.getPath());
-	    if (!manifestDirChrome.mkdir())
-	    {
-	       error("Could not create manifest directory: " + manifestDirChrome.getPath());
-	    }
+	 if (chromeInstalled)
+         {
+            if(!manifestDirChrome.exists()) 
+            {
+               message("Installing chrome manifest in: " + manifestDirChrome.getPath());
+               if (!manifestDirChrome.mkdir())
+               {
+                  error("Could not create manifest directory: " + manifestDirChrome.getPath());
+               }
+            }
+            else
+            {
+               message("Chrome manifest is already in: " + manifestDirChrome.getPath());
+            }
 	 }
-	 if (firefoxInstalled && !manifestDirFirefox.exists()) 
-	 {
-            message("Installing firefox manifest in: " + manifestDirFirefox.getPath());
-	    if (!manifestDirFirefox.mkdir())
-	    {
-	       error("Could not create manifest directory: " + manifestDirFirefox.getPath());
-	    }
+	 if (firefoxInstalled)
+         {
+            if(!manifestDirFirefox.exists()) 
+            {
+               message("Installing firefox manifest in: " + manifestDirFirefox.getPath());
+               if (!manifestDirFirefox.mkdir())
+               {
+                  error("Could not create manifest directory: " + manifestDirFirefox.getPath());
+               }
+            }
+            else
+            {
+               message("Firefox manifest is already in: " + manifestDirFirefox.getPath());
+            }
 	 }
 	 message("Installing application in: " + binDir.getPath());
 	 progress.setValue(3);
