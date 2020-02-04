@@ -192,27 +192,24 @@ public class HostInstaller
 
 	 File manifestDirChrome = binDir;
 	 boolean chromeInstalled = false;
+	 File manifestDirChromium = binDir;
+	 boolean chromiumInstalled = false;
 	 File manifestDirFirefox = binDir;	
 	 boolean firefoxInstalled = false;
 	 switch (os)
 	 {
 	    case Linux: 
 	    {
-	       // chrome
+	       // chromium
 	       File configDir = new File(homeDir, ".config");
-	       File browserConfigDir = new File(configDir, "chromium");
-	       if (!browserConfigDir.exists())
-	       {
-		  browserConfigDir = new File(configDir, "google-chrome");
-		  if (!browserConfigDir.exists())
-		  {
-		     message(
-			"Neither Google Chrome nor Chromium appear to be installed; " 
-			+ browserConfigDir.getPath() + " not found.");
-		  }
-	       }
-	       chromeInstalled = browserConfigDir.exists();
-	       manifestDirChrome = new File(browserConfigDir, "NativeMessagingHosts");
+	       File chromiumConfigDir = new File(configDir, "chromium");
+	       chromiumInstalled = chromiumConfigDir.exists();
+	       manifestDirChromium = new File(chromiumConfigDir, "NativeMessagingHosts");
+
+	       // chrome
+	       File chromeConfigDir = new File(configDir, "google-chrome");
+	       chromeInstalled = chromeConfigDir.exists();
+	       manifestDirChrome = new File(chromeConfigDir, "NativeMessagingHosts");
 
 	       // firefox
 	       File mozillaDir = new File(homeDir, ".mozilla");
@@ -243,23 +240,18 @@ public class HostInstaller
 	    }
 	    case Mac:
 	    {
-	       // chrome
+	       // chromium
 	       File libraryDir = new File(homeDir, "Library");
 	       File applicationSupportDir = new File(libraryDir, "Application Support");
-	       File browserConfigDir = new File(applicationSupportDir, "Chromium");
-	       if (!browserConfigDir.exists())
-	       {
-		  File googleDir = new File(applicationSupportDir, "Google");
-		  browserConfigDir = new File(googleDir, "Chrome");
-		  if (!browserConfigDir.exists())
-		  {
-		     message(
-			"Neither Google Chrome nor Chromium appear to be installed; " 
-			+ browserConfigDir.getPath() + " not found.");
-		  }
-	       }
-	       chromeInstalled = browserConfigDir.exists();
-	       manifestDirChrome = new File(browserConfigDir, "NativeMessagingHosts");
+	       File chromiumConfigDir = new File(applicationSupportDir, "Chromium");
+	       chromeInstalled = chromiumConfigDir.exists();
+	       manifestDirChrome = new File(chromiumConfigDir, "NativeMessagingHosts");
+
+               // chrome
+               File googleDir = new File(applicationSupportDir, "Google");
+	       File chromeConfigDir = new File(googleDir, "Chrome");
+	       chromeInstalled = chromeConfigDir.exists();
+	       manifestDirChrome = new File(chromeConfigDir, "NativeMessagingHosts");
 
 	       // firefox
 	       File mozillaConfigDir = new File(applicationSupportDir, "Mozilla");
@@ -272,17 +264,25 @@ public class HostInstaller
 	       throw new Exception("Sorry, your operating system is not supported: " + osName);
 	    }
 	 }
-	 message("Installing chrome manifest in: " + manifestDirChrome.getPath());
+	 if (chromiumInstalled && !manifestDirChromium.exists()) 
+	 {
+            message("Installing chromium manifest in: " + manifestDirChromium.getPath());
+	    if (!manifestDirChromium.mkdir())
+	    {
+	       error("Could not create manifest directory: " + manifestDirChromium.getPath());
+	    }
+	 }
 	 if (chromeInstalled && !manifestDirChrome.exists()) 
 	 {
+            message("Installing chrome manifest in: " + manifestDirChrome.getPath());
 	    if (!manifestDirChrome.mkdir())
 	    {
 	       error("Could not create manifest directory: " + manifestDirChrome.getPath());
 	    }
 	 }
-	 message("Installing firefox manifest in: " + manifestDirFirefox.getPath());
 	 if (firefoxInstalled && !manifestDirFirefox.exists()) 
 	 {
+            message("Installing firefox manifest in: " + manifestDirFirefox.getPath());
 	    if (!manifestDirFirefox.mkdir())
 	    {
 	       error("Could not create manifest directory: " + manifestDirFirefox.getPath());
@@ -338,7 +338,7 @@ public class HostInstaller
 	 }
 	 progress.setValue(5);
 
-	 if (manifestDirChrome.exists()) // only if Chrome is installed
+	 if (manifestDirChrome.exists() || manifestDirChromium.exists())
 	 {
 	    // first ensure any old manifests are deleted
 	    String[] otherPossibleOldManifests = {
@@ -360,28 +360,62 @@ public class HostInstaller
 		     message("Could not delete " + toDelete.getPath());
 		  }
 	       }
+               toDelete = new File(manifestDirChromium, fileName);
+	       if (toDelete.exists())
+	       {
+		  if (toDelete.delete())
+		  {
+		     message("Deleted " + toDelete.getPath());
+		  }
+		  else
+		  {
+		     message("Could not delete " + toDelete.getPath());
+		  }
+	       }
 	    }
 	    	    
 	    // extract/update manifest
 	    String extension = "nzilbb.jsendpraat.chrome";
 	    String manifest = extension+".json";
-	    message("Extracting: " + manifest);
-	    File manifestFile = new File(manifestDirChrome, manifest);
-	    URL manifestUrl = getClass().getResource("/"+manifest);
-	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
-	    PrintWriter manifestWriter = new PrintWriter(manifestFile);
-	    line = manifestReader.readLine();
-	    while(line != null)
-	    {
-	       // skip the allowed_extensions line, which is for Firefox
-	       if (!line.matches(".*allowed_extensions.*"))
-	       {
-		  manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
-	       }
-	       line = manifestReader.readLine();
-	    } // next line
-	    manifestReader.close();
-	    manifestWriter.close();
+            File manifestFile = new File(manifestDirChrome, manifest);
+	    message("Extracting for Chrome/Chromium: " + manifest);
+            if (manifestDirChrome.exists())
+            {
+               URL manifestUrl = getClass().getResource("/"+manifest);
+               BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
+               PrintWriter manifestWriter = new PrintWriter(manifestFile);
+               line = manifestReader.readLine();
+               while(line != null)
+               {
+                  // skip the allowed_extensions line, which is for Firefox
+                  if (!line.matches(".*allowed_extensions.*"))
+                  {
+                     manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+                  }
+                  line = manifestReader.readLine();
+               } // next line
+               manifestReader.close();
+               manifestWriter.close();
+            }
+            if (manifestDirChromium.exists())
+            {
+               manifestFile = new File(manifestDirChromium, manifest);
+               URL manifestUrl = getClass().getResource("/"+manifest);
+               BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
+               PrintWriter manifestWriter = new PrintWriter(manifestFile);
+               line = manifestReader.readLine();
+               while(line != null)
+               {
+                  // skip the allowed_extensions line, which is for Firefox
+                  if (!line.matches(".*allowed_extensions.*"))
+                  {
+                     manifestWriter.println(line.replace("${exepath}", hostScriptFile.getPath().replace("\\","\\\\")));
+                  }
+                  line = manifestReader.readLine();
+               } // next line
+               manifestReader.close();
+               manifestWriter.close();
+            }
 	    
 	    if (os == OS.Windows)
 	    {
@@ -424,7 +458,9 @@ public class HostInstaller
 		  message("Could not set registry directly, falling back to .reg file...");
 		  
 		  // write a registry file
-		  File regFile = new File(manifestDirChrome, "jsendpraat.reg");
+		  File regFile = new File(
+                     manifestDirChrome.exists()? manifestDirChrome : manifestDirChromium,
+                     "jsendpraat.reg");
 		  PrintWriter regWriter = new PrintWriter(regFile);
 		  regWriter.println("Windows Registry Editor Version 5.00");
 		  regWriter.println();
@@ -438,7 +474,7 @@ public class HostInstaller
 		  proc.waitFor();
 	       }
 	    }
-	 } // chrome is installed
+	 } // chrome or chromium is installed
 
 	 if (manifestDirFirefox.exists()) // only if Firefox is installed
 	 {
@@ -471,7 +507,7 @@ public class HostInstaller
 	    // on Windows, Firefox and Chrome have their manifests in the same directory,
 	    // so we use a different file name for this
 	    if (os == OS.Windows) manifestFirefox = extension+"-firefox.json";
-	    message("Extracting: " + manifest);
+	    message("Extracting for Firefox: " + manifest);
 	    File manifestFile = new File(manifestDirFirefox, manifestFirefox);
 	    URL manifestUrl = getClass().getResource("/"+manifest);
 	    BufferedReader manifestReader = new BufferedReader(new InputStreamReader(manifestUrl.openStream()));
