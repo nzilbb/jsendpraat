@@ -153,7 +153,6 @@
 	     storetype="${key.storetype}"
 	     storepass="${key.storepass}"
 	     keypass="${key.keypass}"
-         comment="version ${DSTAMP}.${TSTAMP}"
 	     />
     <chmod file="${dist}/install-${ant.project.name}.jar" perm="u+rx"/>    
     <delete dir="${build}"/>    
