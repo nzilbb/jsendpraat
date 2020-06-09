@@ -298,7 +298,7 @@ public class HostInstaller
             }
             else
             {
-               message("Chromium manifest is already in: " + manifestDirChromium.getPath());
+               message("Chromium manifest directory exists: " + manifestDirChromium.getPath());
             }
 	 }
 	 if (chromeInstalled)
@@ -313,7 +313,7 @@ public class HostInstaller
             }
             else
             {
-               message("Chrome manifest is already in: " + manifestDirChrome.getPath());
+               message("Chrome manifest directory exists: " + manifestDirChrome.getPath());
             }
 	 }
 	 if (firefoxInstalled)
@@ -328,7 +328,7 @@ public class HostInstaller
             }
             else
             {
-               message("Firefox manifest is already in: " + manifestDirFirefox.getPath());
+               message("Firefox manifest directory exists: " + manifestDirFirefox.getPath());
             }
 	 }
 	 message("Installing application in: " + binDir.getPath());
