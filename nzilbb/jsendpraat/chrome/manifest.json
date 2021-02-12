@@ -1,6 +1,6 @@
 {
     "name": "Praat Integration",
-    "version": "0.99",
+    "version": "0.991",
     "manifest_version": 2,
     "description": "Allows Praat to open media on a page",
     "icons": {
@@ -8,12 +8,6 @@
 	"128": "nzilbb-128.png"
     },
     "author": "Robert Fromont, NZILBB",
-    "applications": {
-	"gecko": {
-	    "id": "@jsendpraat",
-	    "strict_min_version": "42.0"
-	}
-    },
     "page_action": {
 	"default_title": "Praat",
 	"default_icon": "praat-16.png",
