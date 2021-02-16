@@ -4,6 +4,8 @@ Praat (http://praat.org) is a popular phonetics tool developed by Paul Boersma a
 
 *jsendpraat*, developed by the NZILBB at the University of Canterbury (http://www.nzilbb.canterbury.ac.nz), includes a Java implementation of sendpraat, and a browser extension (for Chrome and Firefox), allowing interaction with Praat from a web browser. These extensions were developed primarily for use with LaBB-CAT, a brower-based linguistics tool (https://labbcat.canterbury.ac.nz), but can be used to open embedded audio in Praat from any web page.
 
+![Screenshot of browser with Praat plugin icon and links to audio embedded in page](screenshot.png)
+
 jsendpraat.jar functions as a Chrome Native Messaging Host, which manages communication between the browser (Chrome or Firefox) extension and Praat. The Java code for jsendpraat.jar and the Javascript code for the browser extensions are here. The packaged Chrome extension is available here: https://chrome.google.com/webstore/detail/praat-integration/hmmnebkieionilgpepijmfabdickmnig
 
 This implementation tries to load and run JNI native libraries for executing sendpraat compiled from original C code.  Failing that, it looks for and runs the sendpraat standalone program, which  must be installed in the same folder as the praat program. Failing that, it attempts to use a pure-java implementation of sendpraat, which uses signals and only works on Linux.
