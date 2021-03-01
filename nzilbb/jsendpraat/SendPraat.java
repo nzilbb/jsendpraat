@@ -667,7 +667,7 @@ public class SendPraat
 	 if ("version".equals(jsonMessage.getString("message")))
 	 {
 	    jsonReply.put("message", "version");
-	    jsonReply.put("version", "20180606.1040");
+	    jsonReply.put("version", "20210301.1744");
 	    jsonReply.remove("error");
 	    jsonReply.put("code", 0);
 	 }

@@ -51,12 +51,11 @@
       <arg line="-o libsendpraat.so"/>
       <arg line="-shared"/>
       <arg line="-Wl,-soname,libnative.so"/>
-      <arg line="-lX11"/>
-      <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include"/>
-      <arg line="-I/usr/lib/jvm/java-7-openjdk-amd64/include/linux"/>
+      <arg line="-DUNIX"/>
+      <arg line="-DNO_GRAPHICS"/>
+      <arg line="-I/usr/lib/jvm/java-11-openjdk-amd64/include"/>
+      <arg line="-I/usr/lib/jvm/java-11-openjdk-amd64/include/linux"/>
       <arg line="${src}/nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.c"/>
-      <arg line="-lc"/>
-      <arg line="-fPIC"/>
     </exec>
 
     <exec executable="cc" osfamily="mac">

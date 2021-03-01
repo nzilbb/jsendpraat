@@ -1,18 +1,19 @@
-
 /* sendpraat.c */
 /* by Paul Boersma */
-/* December 24, 2007 */
+/* 10 November 2020 */
 
 /*
- * The sendpraat subroutine (Unix with X Window; Windows; Macintosh) sends a message
- * to a running program that uses the Praat shell.
- * The sendpraat program does the same from a Unix command shell,
- * from a Windows or DOS console, or from a MacOS X terminal window.
+ * The sendpraat subroutine (Unix; Windows; Macintosh) sends a message
+ * to a running Praat (or another program that uses the Praat shell).
+ * The sendpraat program behaves identically from a Unix command shell,
+ * from a Windows console, or from a macOS terminal window.
  *
- * New versions: http://www.praat.org or http://www.fon.hum.uva.nl/praat/sendpraat.html
+ * Newer versions of sendpraat may be found at http://www.praat.org or http://www.fon.hum.uva.nl/praat/sendpraat.html
  *
- * On Windows NT, 2000, and XP, this version works only with Praat version 4.3.28 and higher.
- * On Macintosh, this version works only with Praat version 3.8.75 and higher.
+ * On Windows, this version works only with Praat version 4.3.28 (November 2005) or newer.
+ * On Macintosh, this version works only with Praat version 3.8.75 (October 2000) or newer.
+ * On Unix, this version works only with Praat version 6.1.31 (November 2020) or newer.
+ * Newer versions of Praat may respond faster or more reliably.
  */
 
 /*******************************************************************
@@ -27,29 +28,39 @@
 	#include <windows.h>
 	#include <stdio.h>
 	#include <wchar.h>
-	#define xwin 0
+	#define unix_praat 0
 	#define win 1
 	#define mac 0
-#elif defined (macintosh) || defined (__MACH__)
+#elif (defined (macintosh) || defined (__MACH__))
     #include <Carbon/Carbon.h>
     #include <wchar.h>
-	#define gtk 0
+	#define unix_praat 0
 	#define win 0
 	#define mac 1
-#else   /* Assume we are on Unix. */
+#elif defined (UNIX)
 	#include <sys/types.h>
 	#include <signal.h>
 	#include <stdio.h>
 	#include <stdlib.h>
+	#include <string.h>
 	#include <unistd.h>
 	#include <ctype.h>
 	#include <wchar.h>
-	#include <X11/Intrinsic.h>
-	#define xwin 1
+	#include <X11/Xlib.h>
+	#define unix_praat 1
+	#if defined (NO_GRAPHICS) || defined (NO_GUI)   /* for use inside Praat */
+		#define xwin 0
+	#else
+		#define xwin 1
+	#endif
+	#define win 0
+	#define mac 0
+#else
+	#include <wchar.h>
+	#define unix_praat 0
 	#define win 0
 	#define mac 0
 #endif
-
 
 /* 20090401 robert@fromont.net.nz: */
 /* JNI interface to sendpraat */
@@ -73,35 +84,31 @@
 #endif
 #include "nzilbb_jsendpraat_SendPraat.h"
 
-
-
 /*
  * The way to call the sendpraat subroutine from another program.
  */
 char *sendpraat (void *display, const char *programName, long timeOut, const char *text);
-wchar_t *sendpraatW (void *display, const wchar_t *programName, long timeOut, const wchar_t *text);
 /*
  * Parameters:
- * 'display' is the Display pointer, which will be available if you call sendpraat from an X Window program.
- *    If 'display' is NULL, sendpraat will open the display by itself, and close it after use.
- *    On Windows and Macintosh, sendpraat ignores the 'display' parameter.
- * 'programName' is the name of the program that receives the message.
+ * `display` is the Display pointer, which will be available if you call sendpraat from an X11 program.
+ *    If `display` is NULL, sendpraat will open the display by itself, and close it after use.
+ *    On Windows and Macintosh, sendpraat ignores the `display` parameter.
+ * `programName` is the name of the program that receives the message.
  *    This program must have been built with the Praat shell (the most common such programs are Praat and ALS).
  *    On Unix, the program name is usually all lower case, e.g. "praat" or "als", or the name of any other program.
  *    On Windows, you can use either "Praat", "praat", or the name of any other program.
- *    On Macintosh, 'programName' must be "Praat", "praat", "ALS", or the Macintosh signature of any other program.
- * 'timeOut' is the time (in seconds) after which sendpraat will return with a time-out error message
+ *    On Macintosh, `programName` must be "Praat", "praat", "ALS", or the Macintosh signature of any other program.
+ * `timeOut` is the time (in seconds) after which sendpraat will return with a time-out error message
  *    if the receiving program sends no notification of completion.
- *    On Unix and Macintosh, the message is sent asynchronously if 'timeOut' is 0;
+ *    On Unix and Macintosh, the message is sent asynchronously if `timeOut` is 0;
  *    this means that sendpraat will return OK (NULL) without waiting for the receiving program
  *    to handle the message.
  *    On Windows, the time out is ignored.
- * 'text' contains the contents of the Praat script to be sent to the receiving program.
+ * `text` contains the contents of the Praat script to be sent to the receiving program, encoded as UTF-8.
  */
 
 static char errorMessage [1000];
-static wchar_t errorMessageW [1000];
-#if xwin
+#if unix_praat
 	static long theTimeOut;
 	static void handleCompletion (int message) { (void) message; }
 	static void handleTimeOut (int message) { (void) message; sprintf (errorMessage, "Timed out after %ld seconds.", theTimeOut); }
@@ -109,7 +116,7 @@ static wchar_t errorMessageW [1000];
 
 char *sendpraat (void *display, const char *programName, long timeOut, const char *text) {
 	char nativeProgramName [100];
-	#if xwin
+	#if unix_praat
 		char *home, pidFileName [256], messageFileName [256];
 		FILE *pidFile;
 		long pid, wid = 0;
@@ -121,7 +128,7 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 	#elif mac
 		AEDesc programDescriptor;
 		AppleEvent event, reply;
-		OSErr err;
+		OSStatus err;
 		UInt32 signature;
 		(void) display;
 	#endif
@@ -135,21 +142,21 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 	 * Handle case differences.
 	 */
 	strcpy (nativeProgramName, programName);
-	#if xwin
-		nativeProgramName [0] = tolower (nativeProgramName [0]);
+	#if unix_praat
+		nativeProgramName [0] = (char) tolower (nativeProgramName [0]);
 	#else
-		nativeProgramName [0] = toupper (nativeProgramName [0]);
+		nativeProgramName [0] = (char) toupper (nativeProgramName [0]);
 	#endif
 
 	/*
 	 * If the text is going to be sent in a file, create its name.
 	 * The file is going to be written into the preferences directory of the receiving program.
-	 * On X Window, the name will be something like /home/jane/.praat-dir/message.
-	 * On Windows, the name will be something like C:\Documents and Settings\Jane\Praat\Message.txt,
+	 * On Unix, the name will be something like /home/jane/.praat-dir/message.
+	 * On Windows, the name will be something like C:\Users\Jane\Praat\Message.txt,
 	 * or C:\Windows\Praat\Message.txt on older systems.
 	 * On Macintosh, the text is NOT going to be sent in a file.
 	 */
-	#if xwin
+	#if unix_praat
 		if ((home = getenv ("HOME")) == NULL) {
 			sprintf (errorMessage, "HOME environment variable not set.");
 			return errorMessage;
@@ -167,19 +174,19 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 	#endif
 
 	/*
-	 * Write the message file (Unix and Windows only).
+	 * Save the message file (Unix and Windows only).
 	 */
-	#if xwin || win
+	#if unix_praat || win
 	{
-		FILE* messageFile;
+		FILE *messageFile;
 		if ((messageFile = fopen (messageFileName, "w")) == NULL) {
 			sprintf (errorMessage, "Cannot create message file \"%s\" "
-				"(no privilege to write to directory, or disk full).\n", messageFileName);
+				"(no privilege to write to directory, or disk full, or program is not called %s).\n", messageFileName, programName);
 			return errorMessage;
 		}
-		#if xwin
+		#if unix_praat
 			if (timeOut)
-				fprintf (messageFile, "#%ld\n", getpid ());   /* Write own process ID for callback. */
+				fprintf (messageFile, "#%ld\n", (long) getpid ());   /* Write own process ID for callback. */
 		#endif
 		fprintf (messageFile, "%s", text);
 		fclose (messageFile);
@@ -189,13 +196,13 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 	/*
 	 * Where shall we send the message?
 	 */
-	#if xwin
+	#if unix_praat
 		/*
 		 * Get the process ID and the window ID of a running Praat-shell program.
 		 */
 		sprintf (pidFileName, "%s/.%s-dir/pid", home, programName);
 		if ((pidFile = fopen (pidFileName, "r")) == NULL) {
-			sprintf (errorMessage, "Program %s not running (or a version older than 3.6).", programName);
+			sprintf (errorMessage, "Program %s not running.", programName);
 			return errorMessage;
 		}
 		if (fscanf (pidFile, "%ld%ld", & pid, & wid) < 1) {
@@ -231,7 +238,7 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 	/*
 	 * Send the message.
 	 */
-	#if xwin
+	#if unix_praat
 		/*
 		 * Be ready to receive notification of completion.
 		 */
@@ -240,12 +247,13 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 		/*
 		 * Notify running program.
 		 */
-		if (wid != 0) {   /* Praat shell version October 21, 1998 or later? Send event to window. */
+		#if xwin
+		if (wid != 0) {   /* Send event to window. */
 			/*
 			 * Notify main window.
 			 */
 			XEvent event;
-			int displaySupplied = display != NULL;
+			int displaySupplied = ( display != NULL );
 			if (! displaySupplied) {
 				display = XOpenDisplay (NULL);
 				if (display == NULL) {
@@ -261,18 +269,22 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 			event. xclient. message_type = XInternAtom (display, "SENDPRAAT", False);
 			event. xclient. format = 8;   /* No byte swaps. */
 			strcpy (& event. xclient.data.b [0], "SENDPRAAT");
-			if(! XSendEvent (display, (Window) wid, True, KeyPressMask, & event)) {
-				if (! displaySupplied) XCloseDisplay (display);
+			if (! XSendEvent (display, (Window) wid, True, KeyPressMask, & event)) {
+				if (! displaySupplied)
+					XCloseDisplay (display);
 				sprintf (errorMessage, "Cannot send message to %s (window %ld). "
 					"The program %s may have been started by a different user, "
 					"or may have crashed.", programName, wid, programName);
 				return errorMessage;
 			}
-			if (! displaySupplied) XCloseDisplay (display);
-		} else {
+			if (! displaySupplied)
+				XCloseDisplay (display);
+		} else
+		#endif
+		{
 			/*
-			 * Use interrupt mechanism.
-			 */
+				No window ID given by Praat its pid file: use interrupt mechanism instead.
+			*/
 			if (kill (pid, SIGUSR1)) {
 				sprintf (errorMessage, "Cannot send message to %s (process %ld). "
 					"The program %s may have been started by a different user, "
@@ -287,17 +299,18 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 		if (timeOut) {
 			signal (SIGALRM, handleTimeOut);
 			alarm (timeOut);
-			theTimeOut = timeOut;   /* Hand an argument to handleTimeOut () in a static variable. */
+			theTimeOut = timeOut;   // hand an argument to handleTimeOut () in a static variable
 			errorMessage [0] = '\0';
 			pause ();
-			if (errorMessage [0] != '\0') return errorMessage;
+			if (errorMessage [0] != '\0')
+				return errorMessage;
 		}
 	#elif win
 		/*
 		 * Notify the running program by sending a WM_USER message to its main window.
 		 */
 		if (SendMessage (window, WM_USER, 0, 0)) {
-			sprintf (errorMessage, "Program %s returns error.", programName);   /* BUG? */
+			sprintf (errorMessage, "Program %s returns error.", programName);   // BUG?
 			return errorMessage;
 		}
 	#elif mac
@@ -305,7 +318,7 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 		 * Notify the running program by sending it an Apple event of the magic class 758934755.
 		 */
 		AECreateAppleEvent (758934755, 0, & programDescriptor, kAutoGenerateReturnID, 1, & event);
-		AEPutParamPtr (& event, 1, typeChar, text, strlen (text) + 1);
+		AEPutParamPtr (& event, 1, typeChar, text, (Size) strlen (text) + 1);
 		#ifdef __MACH__
 			err = AESendMessage (& event, & reply,
 				( timeOut == 0 ? kAENoReply : kAEWaitReply ) | kAECanInteract | kAECanSwitchLayer,
@@ -336,252 +349,18 @@ char *sendpraat (void *display, const char *programName, long timeOut, const cha
 	return errorMessage [0] == '\0' ? NULL : errorMessage;
 }
 
-wchar_t *sendpraatW (void *display, const wchar_t *programName, long timeOut, const wchar_t *text) {
-	wchar_t nativeProgramName [100];
-	#if xwin
-		char *home, pidFileName [256], messageFileName [256];
-		FILE *pidFile;
-		long pid, wid = 0;
-	#elif win
-		wchar_t homeDirectory [256], messageFileName [256], windowName [256];
-		HWND window;
-		(void) display;
-		(void) timeOut;
-	#elif mac
-		AEDesc programDescriptor;
-		AppleEvent event, reply;
-		OSErr err;
-		UInt32 signature;
-		(void) display;
-	#endif
-
-	/*
-	 * Clean up from an earlier call.
-	 */
-	errorMessageW [0] = '\0';
-
-	/*
-	 * Handle case differences.
-	 */
-	wcscpy (nativeProgramName, programName);
-	#if xwin
-		nativeProgramName [0] = tolower (nativeProgramName [0]);
-	#else
-		nativeProgramName[0] = toupper (nativeProgramName [0]); 
-	#endif
-
-	/*
-	 * If the text is going to be sent in a file, create its name.
-	 * The file is going to be written into the preferences directory of the receiving program.
-	 * On X Window, the name will be something like /home/jane/.praat-dir/message.
-	 * On Windows, the name will be something like C:\Documents and Settings\Jane\Praat\Message.txt,
-	 * or C:\Windows\Praat\Message.txt on older systems.
-	 * On Macintosh, the text is NOT going to be sent in a file.
-	 */
-	#if xwin
-		if ((home = getenv ("HOME")) == NULL) {
-			swprintf (errorMessageW, 1000, L"HOME environment variable not set.");
-			return errorMessageW;
-		}
-		sprintf (messageFileName, "%s/.%ls-dir/message", home, programName);
-	#elif win
-		if (GetEnvironmentVariableW (L"USERPROFILE", homeDirectory, 255)) {
-			;   /* Ready. */
-		} else if (GetEnvironmentVariableW (L"HOMEDRIVE", homeDirectory, 255)) {
-			GetEnvironmentVariableW (L"HOMEPATH", homeDirectory + wcslen (homeDirectory), 255);
-		} else {
-			GetWindowsDirectoryW (homeDirectory, 255);
-		}
-		swprintf (messageFileName, 256, L"%ls\\%ls\\Message.txt", homeDirectory, programName);
-	#endif
-
-	/*
-	 * Write the message file (Unix and Windows only).
-	 */
-	#if xwin
-		FILE *messageFile;
-		if ((messageFile = fopen (messageFileName, "w")) == NULL) {
-			swprintf (errorMessageW, 1000, L"Cannot create message file \"%s\" "
-				L"(no privilege to write to directory, or disk full).\n", messageFileName);
-			return errorMessageW;
-		}
-		if (timeOut)
-			fwprintf (messageFile, L"#%ld\n", getpid ());   /* Write own process ID for callback. */
-		fwprintf (messageFile, L"\ufeff%ls", text);
-		fclose (messageFile);
-	#elif win
-		{ /* 20090401 robert@fromont.net.nz added braces to please visual studio */
-		  FILE *messageFile;
-		  if ((messageFile = _wfopen (messageFileName, L"w")) == NULL) {
-		    swprintf (errorMessageW, 1000, L"Cannot create message file \"%ls\" "
-		    L"(no privilege to write to directory, or disk full).\n", messageFileName);
-		    return errorMessageW;
-		  }
-		  fwprintf (messageFile, L"\ufeff%ls", text);
-		  fclose (messageFile);
-		} /* 20090401 robert@fromont.net.nz added braces to please visual studio */
-	#endif
-
-	/*
-	 * Where shall we send the message?
-	 */
-	#if xwin
-		/*
-		 * Get the process ID and the window ID of a running Praat-shell program.
-		 */
-		sprintf (pidFileName, "%s/.%ls-dir/pid", home, programName);
-		if ((pidFile = fopen (pidFileName, "r")) == NULL) {
-			swprintf (errorMessageW, 1000, L"Program %ls not running (or a version older than 3.6).", programName);
-			return errorMessageW;
-		}
-		if (fscanf (pidFile, "%ld%ld", & pid, & wid) < 1) {
-			fclose (pidFile);
-			swprintf (errorMessageW, 1000, L"Program %ls not running, or disk has been full.", programName);
-			return errorMessageW;
-		}
-		fclose (pidFile);
-	#elif win
-		/*
-		 * Get the window handle of the "Objects" window of a running Praat-shell program.
-		 */
-		swprintf (windowName, 256, L"PraatShell1 %ls", programName);
-		window = FindWindowW (windowName, NULL);
-		if (! window) {
-			swprintf (errorMessageW, 1000, L"Program %ls not running (or an old version).", programName);
-			return errorMessageW;
-		}
-	#elif mac
-		/*
-		 * Convert the program name to a Macintosh signature.
-		 * I know of no system routine for this, so I'll just translate the two most common names:
-		 */
-		if (! wcscmp (programName, L"praat") || ! wcscmp (programName, L"Praat") || ! wcscmp (programName, L"PRAAT"))
-			signature = 'PpgB';
-		else if (! wcscmp (programName, L"als") || ! wcscmp (programName, L"Als") || ! wcscmp (programName, L"ALS"))
-			signature = 'CclA';
-		else
-			signature = 0;
-		AECreateDesc (typeApplSignature, & signature, 4, & programDescriptor);
-	#endif
-
-	/*
-	 * Send the message.
-	 */
-	#if xwin
-		/*
-		 * Be ready to receive notification of completion.
-		 */
-		if (timeOut)
-			signal (SIGUSR2, handleCompletion);
-		/*
-		 * Notify running program.
-		 */
-		if (wid != 0) {   /* Praat shell version October 21, 1998 or later? Send event to window. */
-			/*
-			 * Notify main window.
-			 */
-			XEvent event;
-			int displaySupplied = display != NULL;
-			if (! displaySupplied) {
-				display = XOpenDisplay (NULL);
-				if (display == NULL) {
-					swprintf (errorMessageW, 1000, L"Cannot open display %s.", XDisplayName (NULL));
-					return errorMessageW;
-				}
-			}
-			event. type = ClientMessage;
-			event. xclient. serial = 0;
-			event. xclient. send_event = True;
-			event. xclient. display = display;
-			event. xclient. window = (Window) wid;
-			event. xclient. message_type = XInternAtom (display, "SENDPRAAT", False);
-			event. xclient. format = 8;   /* No byte swaps. */
-			strcpy (& event. xclient.data.b [0], "SENDPRAAT");
-			if(! XSendEvent (display, (Window) wid, True, KeyPressMask, & event)) {
-				if (! displaySupplied) XCloseDisplay (display);
-				swprintf (errorMessageW, 1000, L"Cannot send message to %ls (window %ld). "
-					"The program %ls may have been started by a different user, "
-					"or may have crashed.", programName, wid, programName);
-				return errorMessageW;
-			}
-			if (! displaySupplied) XCloseDisplay (display);
-		} else {
-			/*
-			 * Use interrupt mechanism.
-			 */
-			if (kill (pid, SIGUSR1)) {
-				swprintf (errorMessageW, 1000, L"Cannot send message to %ls (process %ld). "
-					"The program %ls may have been started by a different user, "
-					"or may have crashed.", programName, pid, programName);
-				return errorMessageW;
-			}
-		}
-		/*
-		 * Wait for the running program to notify us of completion,
-		 * but do not wait for more than 'timeOut' seconds.
-		 */
-		if (timeOut) {
-			signal (SIGALRM, handleTimeOut);
-			alarm (timeOut);
-			theTimeOut = timeOut;   /* Hand an argument to handleTimeOut () in a static variable. */
-			errorMessageW [0] = '\0';
-			pause ();
-			if (errorMessageW [0] != '\0') return errorMessageW;
-		}
-	#elif win
-		/*
-		 * Notify the running program by sending a WM_USER message to its main window.
-		 */
-		if (SendMessage (window, WM_USER, 0, 0)) {
-			swprintf (errorMessageW, 1000, L"Program %ls returns error.", programName);   /* BUG? */
-			return errorMessageW;
-		}
-	#elif mac
-		/*
-		 * Notify the running program by sending it an Apple event of the magic class 758934755.
-		 */
-		AECreateAppleEvent (758934755, 0, & programDescriptor, kAutoGenerateReturnID, 1, & event);
-		AEPutParamPtr (& event, 1, typeUnicodeText, text, wcslen (text) + 1);
-		#ifdef __MACH__
-			err = AESendMessage (& event, & reply,
-				( timeOut == 0 ? kAENoReply : kAEWaitReply ) | kAECanInteract | kAECanSwitchLayer,
-				timeOut == 0 ? kNoTimeOut : 60 * timeOut);
-		#else
-			err = AESend (& event, & reply,
-				( timeOut == 0 ? kAENoReply : kAEWaitReply ) | kAECanInteract | kAECanSwitchLayer,
-				kAENormalPriority, timeOut == 0 ? kNoTimeOut : 60 * timeOut, NULL, NULL);
-		#endif
-		if (err != noErr) {
-			if (err == procNotFound || err == connectionInvalid)
-				swprintf (errorMessageW, 1000, L"Could not send message to program \"%ls\".\n"
-					L"The program is probably not running (or an old version).", programName);
-			else if (err == errAETimeout)
-				swprintf (errorMessageW, 1000, L"Message to program \"%ls\" timed out "
-					L"after %ld seconds, before completion.", programName, timeOut);
-			else
-				swprintf (errorMessageW, 1000, L"Unexpected sendpraat error %d.\nNotify the author.", err);
-		}
-		AEDisposeDesc (& programDescriptor);
-		AEDisposeDesc (& event);
-		AEDisposeDesc (& reply);
-	#endif
-
-	/*
-	 * Notify the caller of success (NULL pointer) or failure (string with an error message).
-	 */
-	return errorMessageW [0] == '\0' ? NULL : errorMessageW;
-}
-
 /*
- * To compile sendpraat as a stand-alone program:
- * temporarily change the following line to "#if 1" instead of "#if 0":
+ * To compile sendpraat as a stand-alone program, use the -DSTAND_ALONE option to the C compiler:
  */
-#if 0
+#ifdef STAND_ALONE
 /*
- * To compile on MacOS X:
-cc -o sendpraat -DSTAND_ALONE -framework CoreServices -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/Headers -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers sendpraat.c -Dmacintosh -DuseCarbon=1
- * or else
-cc -o sendpraat -framework CoreServices -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/Headers -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers sendpraat.c
+	To compile on MacOS X:
+		cc -o sendpraat -DSTAND_ALONE -framework CoreServices -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/Headers -I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers sendpraat.c -Dmacintosh
+
+	To compile on Linux without X:
+		gcc -std=gnu99 sendpraat.c -o sendpraat-signal -DSTAND_ALONE -DUNIX -DNO_GRAPHICS
+	To compile on Linux with X:
+		gcc -std=gnu99 sendpraat.c -o sendpraat-x -DSTAND_ALONE -DUNIX -L /usr/lib/x86_64-linux-gnu -lX11
 */
 int main (int argc, char **argv) {
 	int iarg, line, length = 0;
@@ -637,7 +416,7 @@ int main (int argc, char **argv) {
 		printf ("\n");
 		#if win
 			printf ("   sendpraat praat \"execute C:\\MyDocuments\\MyScript.praat\"\n");
-		#elif mac
+		#else
 			printf ("   sendpraat praat \"execute ~/MyResearch/MyProject/MyScript.praat\"\n");
 		#endif
 		printf ("      Causes the program \"praat\" to execute a script.\n");
@@ -656,7 +435,8 @@ int main (int argc, char **argv) {
 		/*
 		 * Get time-out.
 		 */
-		if (isdigit (argv [iarg] [0])) timeOut = atol (argv [iarg ++]);
+		if (isdigit (argv [iarg] [0]))
+			timeOut = atol (argv [iarg ++]);
 	#endif
 
 	/*
@@ -664,28 +444,32 @@ int main (int argc, char **argv) {
 	 */
 	if (iarg == argc) {
 		fprintf (stderr, "sendpraat: missing program name. Type \"sendpraat\" to get help.\n");
-		return 1;
+		exit (1);
 	}
 	strcpy (programName, argv [iarg ++]);
 
 	/*
 	 * Create the message string.
 	 */
-	for (line = iarg; line < argc; line ++) length += strlen (argv [line]) + 1;
+	for (line = iarg; line < argc; line ++)
+		length += strlen (argv [line]) + 1;
 	length --;
 	message = malloc (length + 1);
 	message [0] = '\0';
 	for (line = iarg; line < argc; line ++) {
 		strcat (message, argv [line]);
-		if (line < argc - 1) strcat (message, "\n");
+		if (line < argc - 1)
+			strcat (message, "\n");
 	}
 
 	/*
 	 * Send message.
 	 */
 	result = sendpraat (NULL, programName, timeOut, message);
-	if (result != NULL)
-		{ fprintf (stderr, "sendpraat: %s\n", result); exit (1); }
+	if (result != NULL) {
+		fprintf (stderr, "sendpraat: %s\n", result);
+		exit (1);
+	}
 
 	exit (0);
 	return 0;
@@ -693,7 +477,6 @@ int main (int argc, char **argv) {
 #endif
 
 /* End of file sendpraat.c */
-
 
 /* 20090401 robert.fromont@canterbury.ac.nz */
 /* JNI method */
@@ -708,6 +491,7 @@ JNIEXPORT jstring JNICALL Java_nzilbb_jsendpraat_SendPraat_sendpraatNative
   const char *text = (*env)->GetStringUTFChars(
     env, jText, &iscopy);
   const char *pReturn = sendpraat (NULL, programName, timeOut, text);
+
 
   jstring jReturn = (*env)->NewStringUTF(env, pReturn);
   return jReturn;
