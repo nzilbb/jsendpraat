@@ -43,39 +43,7 @@
       <compilerarg value="-Xlint"/>
     </javac>
   </target>
-  
-  <target name="native" depends="init"
-          description="compile native source code" >
-    <!-- Compile the sendpraat native library for this platform -->
-    <exec executable="gcc" os="Linux">
-      <arg line="-o libsendpraat.so"/>
-      <arg line="-shared"/>
-      <arg line="-Wl,-soname,libnative.so"/>
-      <arg line="-DUNIX"/>
-      <arg line="-DNO_GRAPHICS"/>
-      <arg line="-I/usr/lib/jvm/java-11-openjdk-amd64/include"/>
-      <arg line="-I/usr/lib/jvm/java-11-openjdk-amd64/include/linux"/>
-      <arg line="${src}/nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.c"/>
-    </exec>
-
-    <exec executable="cc" osfamily="mac">
-      <arg line="-o libsendpraat.so"/>
-      <arg line="-shared"/>
-      <arg line="-framework"/>
-      <arg line="CoreServices"/>
-      <arg line="-Wl,-soname,libnative.so"/>
-      <arg line="-lX11"/>
-      <arg line="-I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/AE.framework/Versions/A/Headers"/>
-      <arg line="-I/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/CarbonCore.framework/Versions/A/Headers"/>
-      <arg line="-I/System/Library/Frameworks/JavaVM.framework/Headers"/>
-      <arg line="${src}/nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.c"/>
-      <arg line="-Dmacintosh"/>
-      <arg line="-DuseCarbon=1"/>
-    </exec>
     
-    <move file="libsendpraat.so" tofile="${src}/nzilbb/jsendpraat/libsendpraat${os.name}${os.arch}.so" />
-  </target>
-  
   <target name="dist" depends="compile"
           description="generate the distribution" >
     <!-- Create the distribution directory -->
@@ -93,11 +61,8 @@
 	<attribute name="Caller-Allowable-Codebase" value="*"/>
       </manifest>
       
-      <!-- include native libraries -->
-      <fileset dir="${src}" includes="nzilbb/jsendpraat/libsendpraat*" />
-
       <!-- include source code -->
-      <fileset dir="${src}" includes="${srcfiles} nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.*" />
+      <fileset dir="${src}" includes="${srcfiles}" />
       <!-- include this build file -->
       <fileset dir="." includes="build.xml" />
       
@@ -139,7 +104,6 @@
       </manifest>
       <fileset dir="${src}" includes="${installersrcfiles}" />
       <zipfileset dir="${src}/nzilbb/jsendpraat/chrome" includes="nzilbb.jsendpraat.chrome.json jsendpraat.sh jsendpraat.bat" prefix="" />
-      <zipfileset dir="${src}/nzilbb/jsendpraat/" includes="WebSendPraat*" prefix="" />
       <zipfileset dir="${dist}" includes="jsendpraat.jar" prefix="" />
       <fileset dir="${src}" includes="/nzilbb/jsendpraat/chrome/${installericon}" />
       <!-- jRegistryKey stuff -->
@@ -180,10 +144,9 @@
     <zip zipfile="${dist}/${ant.project.name}.zip" 
 	 basedir="${chromesrc}">
     </zip>
-    <!-- Mozilla also likes to see source code for extensions that include native exes -->
     <delete file="${dist}/${ant.project.name}-src.zip"/>
     <zip zipfile="${dist}/${ant.project.name}-src.zip">
-      <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles} nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.*" />
+      <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles}" />
     </zip>
     <!-- cleanup -->
     <delete file="${chromesrc}/key.pem"/>
@@ -219,10 +182,9 @@
     <copy todir="${dist}">
       <fileset dir="${firefoxsrc}" includes="*.xpi" />
     </copy>
-    <!-- Mozilla also likes to see source code for extensions that include native exes -->
     <delete file="${dist}/${ant.project.name}-src.zip"/>
     <zip zipfile="${dist}/${ant.project.name}-src.zip">
-      <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles} nzilbb/jsendpraat/nzilbb_jsendpraat_SendPraat.*" />
+      <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles}" />
     </zip>
 
     <!-- cleanup -->

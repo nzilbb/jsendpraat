@@ -62,10 +62,7 @@ import org.json.JSONObject;
 
 /**
  * Java implementation of sendpraat.
- * <p>This class tries to load and run JNI native libraries for executing sendpraat compiled from
- * original C code.  Failing that, it looks for and runs the sendpraat standalone program, which 
- * must be installed in the same folder as the praat program. Failing that, it attempts to use
- * an all-java implementation of sendpraat, which uses signals and only works on Linux.
+ * <p>This class uses Praaat's <tt>--send</tt> option to send a script to Praat.
  * <p>If praat is not already running, a new praat process is started. If the praat program cannot
  * be found, the user is asked where it is.
  * <p>This class also works as a Chrome Native Messaging Host - it can be started from the command
@@ -104,10 +101,6 @@ public class SendPraat
 
    // Attributes:
    
-   /** Native library file */
-   private static File fNativeLibrary = null;
-   /** Whether native library file was successfully loaded */
-   private static boolean bNativeLibraryLoaded = false;
    /** Praat process we started */
    private static Process procPraat;
    /** Regular expression for detecting URLs in script commands */
@@ -254,9 +247,6 @@ public class SendPraat
       checkPraatLocation();
 
    } // end of constructor
-   
-   /** JNI declaration */
-   private native String sendpraatNative(String programName, long timeOut, String text);
    
    /**
     * Checks that the Praat location has been set, and works.
@@ -928,7 +918,7 @@ public class SendPraat
       return jsonReply;
    } // end of processUpload()
    /**
-    * Invokes sendpraat, using the native library or whatever other method is available.
+    * Invokes sendpraat, using praat --send.
     * @param programName
     * @param timeOut
     * @param text
@@ -948,64 +938,6 @@ public class SendPraat
       }
    }
    
-   /**
-    * Attempt to run sendpraat by executing an external program
-    * @param programName
-    * @param timeOut
-    * @param text
-    * @return An error message, or null
-    * @throws Exception
-    */
-   public String sendpraatExternal(String programName, long timeOut, String text)
-      throws Exception
-   {
-      // try to execute the native program
-      String[] cmdArray = 
-	 {
-	    pathToPraat + "sendpraat" + (
-	       win?".exe":
-	       mac?"_"+java.lang.System.getProperty("os.arch")
-	       :""),
-	    programName,
-	    text
-	 };
-      Process proc = null;
-      try
-      {
-	 proc = Runtime.getRuntime().exec(cmdArray);
-      }
-      catch (Exception x)
-      {
-	 // second chance, this time without trying to be clever about
-	 // the exe name
-	 cmdArray[0] = pathToPraat + "sendpraat";
-	 proc = Runtime.getRuntime().exec(cmdArray);
-      }
-      
-      if (mac && false)
-      {
-	 // the MacIntosh version returns an error even if it succeeds,
-	 // so we don't bother waiting for it
-	 return null;
-      }
-      
-      // return any error
-      BufferedReader in = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
-      StringWriter out = new StringWriter();
-      String sLine = in.readLine();
-      while(sLine != null)
-      {
-	 out.write(sLine + "\n");
-	 
-	 // data ready?
-	 sLine = in.readLine();
-      } // next chunk of data	 
-      out.close();
-      in.close();
-      String sStdOut = out.toString().trim();
-      return sStdOut.length() > 0?sStdOut:null;
-   } // end of sendpraatExternal()
-
    /**
     * Attempt to send a script to praat by executing "praat --send"
     * @param text
@@ -1190,26 +1122,6 @@ public class SendPraat
    } // end of printUsage()
 
    /**
-    * Send a message to praat.
-    * @param programName is the name of the program that receives the message.
-    *    This program must have been built with the Praat shell (the most common such programs are Praat and ALS).
-    *    On Unix, the program name is usually all lower case, e.g. "praat" or "als", or the name of any other program.
-    *    On Windows, you can use either "Praat", "praat", or the name of any other program.
-    *    On Macintosh, 'programName' must be "Praat", "praat", "ALS", or the Macintosh signature of any other program.
-    * @param timeOut is the time (in seconds) after which sendpraat will return with a time-out error message
-    *    if the receiving program sends no notification of completion.
-    *    On Unix and Macintosh, the message is sent asynchronously if 'timeOut' is 0;
-    *    this means that sendpraat will return OK (NULL) without waiting for the receiving program
-    *    to handle the message.
-    *    On Windows, the time out is ignored.
-    * @param text contains the contents of the Praat script to be sent to the receiving program.
-    */
-   public String sendpraatJava (String programName, long timeOut, String text)
-   {
-      return sendpraatJava (null, programName, timeOut, text);
-   }
-   
-   /**
     * Sends a message to praat using an array of strings (e.g. from the command line) as arguments.
     * @param argv
     * @return The response
@@ -1282,222 +1194,14 @@ public class SendPraat
       return sendpraat(programName, 0, text);
    }
    
-   /**
-    * Send a message to praat.
-    * This is a partial port of the c code.  Currently only implements 
-    * communication with signals, and uses a Linux-specific method to obtain
-    * the current PID.
-    * @param display is the Display pointer, which will be available if you call sendpraat from an X Window program.
-    *    If 'display' is NULL, sendpraat will open the display by itself, and close it after use.
-    *    On Windows and Macintosh, sendpraat ignores the 'display' parameter.
-    * @param programName is the name of the program that receives the message.
-    *    This program must have been built with the Praat shell (the most common such programs are Praat and ALS).
-    *    On Unix, the program name is usually all lower case, e.g. "praat" or "als", or the name of any other program.
-    *    On Windows, you can use either "Praat", "praat", or the name of any other program.
-    *    On Macintosh, 'programName' must be "Praat", "praat", "ALS", or the Macintosh signature of any other program.
-    * @param timeOut is the time (in seconds) after which sendpraat will return with a time-out error message
-    *    if the receiving program sends no notification of completion.
-    *    On Unix and Macintosh, the message is sent asynchronously if 'timeOut' is 0;
-    *    this means that sendpraat will return OK (NULL) without waiting for the receiving program
-    *    to handle the message.
-    *    On Windows, the time out is ignored.
-    * @param text contains the contents of the Praat script to be sent to the receiving program.
-    */
-   public String sendpraatJava (Object display, String programName, long timeOut, String text)
-   {
-	String nativeProgramName = "";
-	//#if xwin
-	String home = "";
-	String pidFileName = "";
-	String messageFileName = "";
-	File pidFile = null;
-	long pid = 0;
-	long wid = 0;
-	/*
-	 * Clean up from an earlier call.
-	 */
-	errorMessage = null;
-	/*
-	 * Handle case differences.
-	 */
-	nativeProgramName = programName;
-	if (xwin)
-	{
-	   nativeProgramName
-	      = "" + Character.toLowerCase(nativeProgramName.charAt(0))
-	      + nativeProgramName.substring(1);
-	}
-	else
-	{
-	   nativeProgramName
-	      = "" + Character.toUpperCase(nativeProgramName.charAt(0))
-	      + nativeProgramName.substring(1);
-	}
-	/*
-	 * If the text is going to be sent in a file, create its name.
-	 * The file is going to be written into the preferences directory of the receiving program.
-	 * On X Window, the name will be something like /home/jane/.praat-dir/message.
-	 * On Windows, the name will be something like C:\Documents and Settings\Jane\Praat\Message.txt,
-	 * or C:\Windows\Praat\Message.txt on older systems.
-	 * On Macintosh, the text is NOT going to be sent in a file.
-	 */
-	if (xwin)
-	{
-	   if (sUserHome == null) 
-	   {
-	      errorMessage = "HOME environment variable not set.";
-	      return errorMessage;
-	   }
-	   messageFileName = sUserHome 
-	      + File.separator + "." + programName + "-dir" 
-	      + File.separator + "message";
-	}
-	else if (win)
-	{	   
-	   if (sUserHome == null) 
-	   {
-	      errorMessage = "user.home property not available.";
-	      return errorMessage;
-	   }
-	   messageFileName = sUserHome 
-	      + File.separator + programName 
-	      + File.separator + "Message.txt";
-	}
-	/*
-	 * Get the PID if possible
-	 */
-	if (xwin)
-	{
-	   try
-	   {
-	      // this works on linux...
-	      iPid = Integer.parseInt( ( new File("/proc/self"))
-	      .getCanonicalFile().getName() );
-	   }
-	   catch(Exception x)
-	   {
-	      errorMessage = "Cannot get process ID (" + x + ").\n";
-	      return errorMessage;
-	   }
-	}
-	
-	/*
-	 * Write the message file (Unix and Windows only).
-	 */
-	if (xwin || win)
-	{
-	   File messageFile = new File(messageFileName);
-	   try
-	   {
-	      FileWriter wMessageFile = new FileWriter(messageFile);
-	      if (xwin)
-	      {
-		 if (timeOut > 0)
-		 {
-		    wMessageFile.write("#" + iPid + "\n");   /* Write own process ID for callback. */
-		 }
-	      }
-	      wMessageFile.write(text);
-	      wMessageFile.close();
-	   }
-	   catch (IOException x)
-	   {
-	      errorMessage = "Cannot create message file \"" 
-		 + messageFileName + "\" (" + x + ").\n";
-	      return errorMessage;
-	   }
-	}
-	/*
-	 * Where shall we send the message?
-	 */
-	if (xwin)
-	{
-	   /*
-	    * Get the process ID and the window ID of a running Praat-shell program.
-	    */
-	   pidFileName = sUserHome 
-	      + File.separator + "." + programName + "-dir"
-	      + File.separator + "pid";
-	   pidFile = new File(pidFileName);
-	   if (!pidFile.exists())
-	   {
-	      errorMessage = "Program " + programName 
-		 + " not running (or a version older than 3.6).";
-	      return errorMessage;
-	   }
-	   try
-	   {
-	      BufferedReader rPidFile = new BufferedReader(new FileReader(pidFile));
-	      String sLine = rPidFile.readLine();
-	      int iSpace = sLine.indexOf(' ');
-	      pid = Long.parseLong(sLine.substring(0, iSpace));
-	      wid = Long.parseLong(sLine.substring(iSpace+1));	      
-	      rPidFile.close();
-	   }
-	   catch (IOException x)
-	   {
-	      errorMessage = "Program " + programName 
-		 + " not running or disk has been full: " + x;
-	      return errorMessage;
-	   }
-	}
-	else if (win)
-	{
-	   /*
-	    * Get the window handle of the "Objects" window of a running Praat-shell program.
-	    */
-	   errorMessage = "Please download sendpraat and save it to the same folder where Praat is installed: http://www.fon.hum.uva.nl/praat/sendpraat.html";
-	   return errorMessage;	   	   
-	}
-	else if (mac)
-	{
-	   /*
-	    * Convert the program name to a Macintosh signature.
-	    * I know of no system routine for this, so I'll just translate the two most common names:
-	    */
-	   errorMessage = "Please download sendpraat and save it to the same folder where Praat is installed: http://www.fon.hum.uva.nl/praat/sendpraat.html";
-	   return errorMessage;
-	}
-	else
-	{
-	   errorMessage = "Please download sendpraat and save it to the same folder where Praat is installed: http://www.fon.hum.uva.nl/praat/sendpraat.html";
-	   return errorMessage;
-	}
-	/*
-	 * Send the message.
-	 */
- 	if (xwin)
-	{
-	   /*
-	    * Use interrupt mechanism.
-	    */
-	   try
-	   {
-	      java.lang.Runtime.getRuntime().exec("kill -s SIGUSR1 " + pid);
-	   }
-	   catch (Exception x)
-	   {
-	      errorMessage = "Cannot send message to " + programName 
-		 + " (process " + pid + "). "
-		 + "The program " + programName 
-		 + " may have been started by a different user, "
-		 + "or may have crashed: " + x;
-	      return errorMessage;
-	   }
-	} 		
-	/*
-	 * Notify the caller of success (NULL pointer) or failure (string with an error message).
-	 */
-	return errorMessage;
-   }
    public void handleCompletion (int message) 
    { 
       //?(void) message; 
    }
+  
    public void handleTimeOut (int message) 
    {
       logError("Timed out after " + theTimeOut + " seconds.");
    }
    
-   private synchronized native void SendMessage(long HWND, int message, long wParam, int lParam) throws UnsatisfiedLinkError;
 } // end of class SendPraat
