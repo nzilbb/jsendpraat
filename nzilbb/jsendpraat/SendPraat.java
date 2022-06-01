@@ -1,5 +1,5 @@
 //
-// Copyright 2004-2018 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2004-2022 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -22,6 +22,7 @@
 
 package nzilbb.jsendpraat;
 
+import java.awt.Desktop;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -40,6 +41,7 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -354,7 +356,6 @@ public class SendPraat
 	    {
 	       logError("Could not save settings: " + exception);
 	    }
-	    return true;
 	 }
 	 else
 	 {
@@ -362,7 +363,51 @@ public class SendPraat
 	    return false;
 	 }
       }
-      return true;
+
+      // check version - must be higher than 6.2.05
+      praatProgramFile = new File((pathToPraat==null?"":pathToPraat) + praatProgramName);
+      try
+      {
+         String[] cmd = {praatProgramFile.getPath(),"--version"};
+         Process proc = Runtime.getRuntime().exec(cmd);
+         proc.waitFor();
+         BufferedReader in = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+         String version = in.readLine();
+         in.close();
+         // something like "Praat 6.2.14 (May 24 2022)"
+         String[] parts = version.split(" ");
+         String error = null;
+         if (parts.length < 2)
+         {
+            error = "Could not parse Praat version: " + version;
+         }
+         else
+         {
+            if (parts[1].compareTo("6.2.05") < 0)
+            {
+               error = "Your version of Praat ("+version+") is too old."
+                  +"\nPlease install a version of Praat >= 6.2.05";
+            }
+         }
+         if (error != null)
+         {
+            logError(error);
+            JOptionPane.showMessageDialog(
+               null, error, "Praat version check", JOptionPane.ERROR_MESSAGE);
+            try { // open praat.org for them
+               Desktop.getDesktop().browse(new URI("https://praat.org"));
+            } catch (Exception x) {}
+            return false;
+         }
+         else
+         {
+            return true;
+         }
+      }
+      catch (Throwable t) 
+      {
+         return false;
+      }
    } // end of checkPraatLocation()
    
    /**
