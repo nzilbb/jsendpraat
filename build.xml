@@ -121,8 +121,8 @@
 	   includes="${installersrcfiles}"
 	   listfiles="yes"
 	   includeantruntime="false"
-	   target="6"
-	   source="6"
+	   target="8"
+	   source="8"
 	   debug="on"
 	   >
       <compilerarg value="-Xlint"/>
