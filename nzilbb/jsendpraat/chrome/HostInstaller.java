@@ -335,7 +335,7 @@ public class HostInstaller
 	 progress.setValue(3);
 
 	 // extract executable jar/exe
-	 String hostJar = os == OS.Mac?"WebSendPraatMacx86_64":"jsendpraat.jar";
+	 String hostJar = "jsendpraat.jar";
 	 message("Extracting: " + hostJar);
 	 File hostJarFile = new File(binDir, hostJar);
 	 URL hostJarUrl = getClass().getResource("/"+hostJar);
@@ -350,10 +350,6 @@ public class HostInstaller
 	 } // next chunk of data
 	 jarStream.close();
 	 outStream.close();
-	 if (os == OS.Mac)
-	 {
-	    makeExecutable(hostJarFile);
-	 }
 
 	 progress.setValue(4);
 
