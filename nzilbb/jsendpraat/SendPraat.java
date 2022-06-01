@@ -22,40 +22,41 @@
 
 package nzilbb.jsendpraat;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileInputStream;
-import java.io.FileWriter;
-import java.io.FileReader;
-import java.io.PrintWriter;
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteOrder;
-import java.nio.ByteBuffer;
-import java.net.URL;
-import java.net.MalformedURLException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Properties;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
-import javax.swing.JOptionPane;
+import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.UIManager;
-import org.json.JSONObject;
-import org.json.JSONArray;
-import org.json.JSONException;
 import nzilbb.http.FileDownloader;
+import nzilbb.http.HttpRequestPostMultipart;
 import nzilbb.http.IMessageHandler;
 import nzilbb.http.IProgressIndicator;
-import nzilbb.http.HttpRequestPostMultipart;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Java implementation of sendpraat.
@@ -250,97 +251,6 @@ public class SendPraat
 
       checkPraatLocation();
 
-      if (fNativeLibrary == null)
-      {
-	 // load the native library?
-	 String sNativeLibraryName = "libsendpraat" + sOsName + sOsArch + ".";
-	 URL urlLibrary = null;
-	 if (win)
-	 {
-	    //sNativeLibraryName = "libsendpraatWindows.dll";
-	    sNativeLibraryName += "dll";
-	 }
-	 else
-	 {
-	    try
-	    {
-	       // force X11 libraries to load
-	       new java.awt.Frame("sendpraat");
-	    }
-	    catch (Throwable t)
-	    {
-	       log("SendPraat: could not load X11: " + t.toString());
-	    }
-	    sNativeLibraryName += "so";
-	 }	    
-	 try
-	 {
-	    urlLibrary = getClass().getResource(sNativeLibraryName);
-	 }
-	 catch (Throwable t)
-	 {
-	    log("SendPraat: error getting native url (" + sNativeLibraryName + "): " + t.toString());
-	 }
-	 
-	 if (urlLibrary != null)
-	 {
-	    try
-	    {
-	       // extract the native library
-	       //log("SendPraat: opening input stream");
-	       BufferedInputStream in = new BufferedInputStream(urlLibrary.openStream());
-	       fNativeLibrary = File.createTempFile("SendPraat.","."+sNativeLibraryName);
-	       fNativeLibrary.deleteOnExit();
-	       //log("SendPraat: file: " + fNativeLibrary.getPath());
-	       FileOutputStream out = new FileOutputStream(fNativeLibrary);
-	       //log("SendPraat: opening output stream");
-	       byte [] chunk = new byte[1024];
-	       for(int numBytes = in.read(chunk); numBytes >= 0; numBytes = in.read(chunk))
-	       {
-		  out.write(chunk, 0, numBytes);
-	       } // next chunk
-	       out.close();
-	       in.close();	       
-	       //log("SendPraat: finished extracting file");
-	    }
-	    catch (Throwable t)
-	    {
-	       logError("SendPraat: error extracting native library (" 
-		     + urlLibrary.toString() + "): " + t.toString());
-	    }
-	 }
-	 
-	 if (fNativeLibrary != null)
-	 {
-	    try
-	    {
-	       if(fNativeLibrary.exists())
-	       {
-		  System.load(fNativeLibrary.getPath());
-		  bNativeLibraryLoaded = true;
-		  log("SendPraat: Loaded native library: " + fNativeLibrary);
-	       }
-	       else
-	       {
-		  logError("SendPraat: failed to extract native library: " + fNativeLibrary.getPath());
-	       }
-	       
-	    }
-	    catch (Throwable t)
-	    {
-	       logError("SendPraat: error loading native library ("
-		     + fNativeLibrary.getPath() + "): " + t.toString());
-	       fNativeLibrary.delete();
-	       bNativeLibraryLoaded = false;
-	       fNativeLibrary = null;
-	    }
-	 } // native library file specified
-      } // try to load native library
-      else
-      {
-	 log("Already loaded: " + fNativeLibrary.getPath());
-      }
-
    } // end of constructor
    
    /** JNI declaration */
@@ -398,25 +308,6 @@ public class SendPraat
       {
 	 if (mac)
 	 {
-	    // Mactintoshes are slower in responding, so adjust our
-	    // wait times
-	    lWaitMsPraatStart *= 2;
-	    lWaitMsPraatStart *= 2;
-	    
-	    // also sendpraat is usually not installed as executable, so try to make it executable
-	    String sPath = (pathToPraat==null?"":pathToPraat) + "sendpraat";
-	    String[] cmdArray = {"/bin/chmod", "a+x", sPath};		  
-	    try
-	    {
-	       Runtime.getRuntime().exec(cmdArray);
-	       try { Thread.sleep(lWaitMsPraatStart); } catch(InterruptedException x){}
-	    }
-	    catch(Exception x)
-	    {
-	       logError("Can't chmod " + cmdArray[2] + " : " + x);
-	    }
-	    
-	    // And the path needs adjusting
 	    praatProgramName = "Praat.app/Contents/MacOS/Praat";
 	 }
 	 else if (win)
@@ -1001,27 +892,14 @@ public class SendPraat
    private String sendpraat(String programName, long timeOut, String text)
    {
       log("sendpraat: " + programName + " " + timeOut + " " + text);
-      if (bNativeLibraryLoaded)
+      try
       {
-	 String sReturned = sendpraatNative(programName, timeOut, text);
-	 if (sReturned != null) log("Native library returned: " + sReturned);
-	 return sReturned;
+         //return sendpraatExternal(programName, timeOut, text);
+         return praatSend(text);
       }
-      else
+      catch(Exception exception)
       {
-	 // try to execute the native program
-	 log("Trying to execute native program...");
-	 try
-	 {
-	    return sendpraatExternal(programName, timeOut, text);
-	 }
-	 catch(Exception exception)
-	 {
-	    log("Program failed: " + exception + " - trying pure java method...");
-	    
-	    // if we get this far, last ditch effort - use signals
-	    return sendpraatJava(programName, timeOut, text);
-	 }
+         return exception.toString();
       }
    }
    
@@ -1082,7 +960,47 @@ public class SendPraat
       String sStdOut = out.toString().trim();
       return sStdOut.length() > 0?sStdOut:null;
    } // end of sendpraatExternal()
-   
+
+   /**
+    * Attempt to send a script to praat by executing "praat --send"
+    * @param text
+    * @return An error message, or null
+    * @throws Exception
+    */
+   public String praatSend(String text)
+      throws Exception
+   {
+      log("praatSend...");
+      // write script to file
+      File script = File.createTempFile("SendPraat.",".praat");
+      script.deleteOnExit();
+      PrintWriter writer = new PrintWriter(script, "UTF-8");
+      writer.print(text);
+      writer.close();
+      log("Script: " + script.getPath());
+      try
+      {
+         String strPraat = (pathToPraat==null?"":pathToPraat) + praatProgramName;
+         String[] cmdArray = 
+            {
+               strPraat,
+               "--send",
+               script.getPath()
+            };
+         log(strPraat + " --send " + script.getPath());
+         Process proc = Runtime.getRuntime().exec(cmdArray);
+         return null;
+      }
+      finally
+      {
+         // keep the script file long enough to ensure that Praat has had a chance to process it
+         new Thread(()->{
+               try { Thread.sleep(3000); } catch (Exception x) {}
+               script.delete();
+         }).start();
+      }
+   } // end of sendpraatExternal()
+
    /**
     * Main entrypoint for calling from the command-line
     * @param argv Command-line arguments
