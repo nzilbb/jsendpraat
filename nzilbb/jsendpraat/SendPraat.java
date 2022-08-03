@@ -359,7 +359,8 @@ public class SendPraat
       try
       {
          String[] cmd = {praatProgramFile.getPath(),"--version"};
-         Process proc = Runtime.getRuntime().exec(cmd);
+         String[] cmdWin = {praatProgramFile.getPath(),"--utf8","--version"};
+         Process proc = Runtime.getRuntime().exec(win?cmdWin:cmd);
          proc.waitFor();
          BufferedReader in = new BufferedReader(new InputStreamReader(proc.getInputStream()));
          String version = in.readLine();
@@ -554,6 +555,7 @@ public class SendPraat
 	 }
 	 catch(EOFException exception)
 	 {
+            log("EOF");
 	    break;
 	 }
 	 catch(IOException exception)
@@ -593,7 +595,7 @@ public class SendPraat
 	 if ("version".equals(jsonMessage.getString("message")))
 	 {
 	    jsonReply.put("message", "version");
-	    jsonReply.put("version", "1.0");
+	    jsonReply.put("version", "20220803.1558");
 	    jsonReply.remove("error");
 	    jsonReply.put("code", 0);
 	 }
@@ -798,7 +800,7 @@ public class SendPraat
 	    }
 	    else
 	    {
-	       log("Local file: " + file.getPath());
+              log("Local file: " + file.getPath());
 	    }
 	 } // synchronized
 	 if (file != null && file.exists())
@@ -964,15 +966,22 @@ public class SendPraat
                "--send",
                script.getPath()
             };
+         String[] cmdArrayWin = 
+            {
+               strPraat,
+               "--utf8",
+               "--send",
+               script.getPath()
+            };
          log(strPraat + " --send " + script.getPath());
-         Process proc = Runtime.getRuntime().exec(cmdArray);
+         Process proc = Runtime.getRuntime().exec(win?cmdArrayWin:cmdArray);
          return null;
       }
       finally
       {
          // keep the script file long enough to ensure that Praat has had a chance to process it
          new Thread(()->{
-               try { Thread.sleep(3000); } catch (Exception x) {}
+               try { Thread.sleep(30000); } catch (Exception x) {}
                script.delete();
          }).start();
       }
