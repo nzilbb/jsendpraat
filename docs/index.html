@@ -49,23 +49,27 @@
      
       <p> If you click the Praat icon, you should see three URLs listed: </p>
       
-      <ul>
-        <li> A file called <i>link.wav</i> which is detected from the following link:<br>
-          <a href="link.wav" title="A direct link to a .wav file">link.wav</a></li>
-        <li> A file called <i>fragment.wav</i> which is detected from the following link to a
-          wav fragment:<br>
-          <a href="fragment.wav#t=0.3,0.6" title="A direct link to a .wav fragment">
-            fragment.wav#t=0.3,0.6</a></li>
-        <li> A file called <a>audio-src.wav</a> which is detected from this following audio
-          control:<br> 
-          <audio src="audio-src.wav" controls></audio></li>
-        <li> A file called <a>audio-source.wav</a> which is detected from this following
-          audio control:<br> 
+      <dl>
+        <dt>audio-source.wav</dt>
+        <dd> which is detected from this following audio control:<br> 
           <audio controls>
             <source src="audio-source.wav" type="audio/wav">
           </audio>
-        </li>
-      </ul>
+        </dd>
+        
+        <dt>audio-src.wav</dt>
+        <dd> which is detected from this following audio control:<br> 
+          <audio src="audio-src.wav" controls></audio></dd>
+        
+        <dt>fragment.wav</dt>
+        <dd> which is detected from the following link to a wav fragment:<br>
+          <a href="fragment.wav#t=0.3,0.6" title="A direct link to a .wav fragment">
+            fragment.wav#t=0.3,0.6</a></dd>
+        
+        <dt>link.wav</dt>
+        <dd>  which is detected from the following link:<br>
+          <a href="link.wav" title="A direct link to a .wav file">link.wav</a></dd>
+      </dl>
     </article>    
   </body>
 </html>
