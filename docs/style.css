@@ -10,6 +10,7 @@ article {
 }
 figure {
     margin: 1mm;
+    border: 1px solid silver;
 }
 figure img {
     max-width: 90vw;
