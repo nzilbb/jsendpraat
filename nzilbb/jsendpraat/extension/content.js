@@ -81,26 +81,26 @@ window.addEventListener("message", function(event) {
 }, false);
 
 // find all audio elements on the page
-function findAudioUrls() { // TODO add this to a library shared between extensions
+function findAudioUrls() {
 
     var urls = [];
     var audioTags = document.getElementsByTagName("audio");
     for (a = 0; a < audioTags.length; a++) {
 	var audio = audioTags[a];
 	if (audio.src) {
-	    if (audio.src.search(/\.wav$/) >= 0)
+	    if (audio.src.search(/\.wav$/i) >= 0)
 	    {
 		if (!urls.includes(audio.src)) {
 		    urls.push(audio.src);
 		}
 	    }
-	    if (audio.src.search(/\.flac$/) >= 0)
+	    if (audio.src.search(/\.flac$/i) >= 0)
 	    {
 		if (!urls.includes(audio.src)) {
 		    urls.push(audio.src);
 		}
 	    }
-	    if (audio.src.search(/\.mp3$/) >= 0)
+	    if (audio.src.search(/\.mp3$/i) >= 0)
 	    {
 		if (!urls.includes(audio.src)) {
 		    urls.push(audio.src);
@@ -111,7 +111,7 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	for (s = 0; s < sources.length; s++) {
 	    var source = sources[s];
 	    if (source.type == "audio/wav"
-		|| source.src.search(/\.wav$/) >= 0)
+		|| source.src.search(/\.wav$/i) >= 0)
 	    {
 		if (!urls.includes(source.src)) {
 		    urls.push(source.src);
@@ -121,7 +121,7 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	for (s = 0; s < sources.length; s++) {
 	    var source = sources[s];
 	    if (source.type == "audio/flac"
-		|| source.src.search(/\.flac$/) >= 0)
+		|| source.src.search(/\.flac$/i) >= 0)
 	    {
 		if (!urls.includes(source.src)) {
 		    urls.push(source.src);
@@ -131,7 +131,7 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 	for (s = 0; s < sources.length; s++) {
 	    var source = sources[s];
 	    if (source.type == "audio/mpeg"
-		|| source.src.search(/\.mp3$/) >= 0)
+		|| source.src.search(/\.mp3$/i) >= 0)
 	    {
 		if (!urls.includes(source.src)) {
 		    urls.push(source.src);
@@ -142,12 +142,18 @@ function findAudioUrls() { // TODO add this to a library shared between extensio
 
     var anchorTags = document.getElementsByTagName("a");
     for (a = 0; a < anchorTags.length; a++) {
-	var anchor = anchorTags[a];
-	if (anchor.href.endsWith(".wav") || anchor.href.endsWith(".mp3")) {
-	    if (!urls.includes(anchor.href)) {
-		urls.push(anchor.href);
+      var anchor = anchorTags[a];
+      if (anchor.href) {
+        var href = anchor.href.replace(/#.*$/,"");
+        console.log(`href ${href}`);
+	if (href.toLowerCase().endsWith(".wav")
+            || href.toLowerCase().endsWith(".flac")
+            || href.toLowerCase().endsWith(".mp3")) {
+	    if (!urls.includes(href)) {
+		urls.push(href);
 	    }
-	}
+	} // file ends with audio extension
+      } // there's an href
     } // next <a>
 
     return urls;
