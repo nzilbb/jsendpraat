@@ -47,7 +47,7 @@
       <p> You may find you need to 'pin' the extension so that it always appears in the
         address bar.</p>
      
-      <p> If you click the Praat icon, you should see three URLs listed: </p>
+      <p> If you click the Praat icon, you should see several URLs listed: </p>
       
       <dl>
         <dt>audio-source.wav</dt>
@@ -60,16 +60,27 @@
         <dt>audio-src.wav</dt>
         <dd> which is detected from this following audio control:<br> 
           <audio src="audio-src.wav" controls></audio></dd>
-        
+
+        <dt>dynamic-content.wav</dt>
+        <dd> which is detected from the following dynamically generated link:<br>
+          <span id="dynamic-content-container"></span></dd>
+
         <dt>fragment.wav</dt>
         <dd> which is detected from the following link to a wav fragment:<br>
           <a href="fragment.wav#t=0.3,0.6" title="A direct link to a .wav fragment">
             fragment.wav#t=0.3,0.6</a></dd>
         
         <dt>link.wav</dt>
-        <dd>  which is detected from the following link:<br>
+        <dd> which is detected from the following link:<br>
           <a href="link.wav" title="A direct link to a .wav file">link.wav</a></dd>
+
       </dl>
-    </article>    
+    </article>
+    <script>
+      var a = document.createElement("a");
+      a.href = "dynamic-content.wav";
+      a.appendChild(document.createTextNode("dynamic-content.wav"));
+      document.getElementById("dynamic-content-container").appendChild(a);
+    </script>
   </body>
 </html>

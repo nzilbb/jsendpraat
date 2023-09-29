@@ -23,6 +23,10 @@ a:link, a:visited {
     color:#859044;
 }
 
+dt {
+    font-style: italic;
+}
+
 /* Wide display */
 @media all and (min-width: 640px) {
     html, body {
