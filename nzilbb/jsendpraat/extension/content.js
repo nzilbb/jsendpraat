@@ -46,6 +46,13 @@ function upload(sendpraat, uploadUrl, fileParameter, fileUrl, otherParameters, a
     });
 }
 
+// ask messaging host for its version
+function messageHostVersion() {
+    postMessageToBackground({
+	"message" : "version"
+    });
+}
+
 function activateAudioTags(urls) {
     postMessageToBackground({
 	"message" : "activateAudioTags", 
@@ -75,6 +82,9 @@ window.addEventListener("message", function(event) {
 	    break;
 	case "upload":
 	    upload(event.data.sendpraat, event.data.uploadUrl, event.data.fileParameter, event.data.fileUrl, event.data.otherParameters, event.data.authorization);
+	    break;
+	case "version":
+	    sendpraat(event.data.sendpraat, event.data.authorization);
 	    break;
 	} // switch on event.data.message
     } // FROM_PRAAT_PAGE

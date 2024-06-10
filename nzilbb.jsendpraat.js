@@ -134,6 +134,7 @@ nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatRes
     var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     if (!isSafari && window.postMessage) { // extension could be compatible with this browser
         window.addEventListener("message", function(event) {
+          console.log("message: " + JSON.stringify(event));
 	    // We only accept messages from ourselves
             if (event.source != window) return;          
             if (event.data.type == "FROM_PRAAT_EXTENSION") {
@@ -141,20 +142,29 @@ nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatRes
 		    nzilbb.jsendpraat.log("jsendpraat extension is installed: v" + event.data.version);
 		    nzilbb.jsendpraat.isInstalled = true;
 		    nzilbb.jsendpraat.version = event.data.version;
+
+                    // find out what the messaging host version is
+                  console.log("Querying message host version...");
+                    window.postMessage(
+                      { 
+                        "type": "FROM_PRAAT_PAGE", 
+                        "message": "version"
+                      }, '*');
+                  
 		    if (onExtensionDetected) onExtensionDetected();
 		} else if (event.data.message == "sendpraat") {
-		    nzilbb.jsendpraat.log("jsendpraat sendpraat: " + event.data);
+		    nzilbb.jsendpraat.log("jsendpraat sendpraat: " + JSON.stringify(event.data));
 		    if (onSendPraatResponse) {
 			onSendPraatResponse(event.data.code, event.data.error);
 		    }
 		} else if (event.data.message == "progress") {
-		    nzilbb.jsendpraat.log("jsendpraat progress: " + event.data);
+		    nzilbb.jsendpraat.log("jsendpraat progress: " + JSON.stringify(event.data));
 		    if (onProgress) {
 			onProgress(event.data.string, event.data.value, event.data.maximum, 
 				   event.data.error, event.data.code);
 		    }
 		} else if (event.data.message == "upload") {
-		    nzilbb.jsendpraat.log("jsendpraat upload: " + event.data);
+		    nzilbb.jsendpraat.log("jsendpraat upload: " + JSON.stringify(event.data));
 		    if (onUploadResponse) {
 			var messages = "";
 			// if it's LaBB-CAT, we can return more detail
@@ -169,6 +179,8 @@ nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatRes
 			}
 			onUploadResponse(event.data.code, messages, event.data.error);
 		    }
+		} else if (event.data.message == "version") {
+		  nzilbb.jsendpraat.log("jsendpraat version: " + JSON.stringify(event.data));
 		}
 	    } // FROM_PRAAT_EXTENSION
 	}, false); // addEventListener

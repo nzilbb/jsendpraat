@@ -595,13 +595,25 @@ public class SendPraat
 	 if ("version".equals(jsonMessage.getString("message")))
 	 {
 	    jsonReply.put("message", "version");
-	    jsonReply.put("version", "20220803.1558");
+	    jsonReply.put("version", "20240610.1514");
 	    jsonReply.remove("error");
 	    jsonReply.put("code", 0);
 	 }
 	 else
 	 { // assume a sendpraat message
 	    JSONArray jsonArguments = jsonMessage.getJSONArray("sendpraat");
+
+            // if there's an upload file involved, get its current modification time
+            // so we can track when Praat has updated it
+            long fileLastModfied = -1;
+            File uploadFile = null;
+            if (jsonMessage.has("fileUrl")) {
+              URL fileUrl = new URL(jsonMessage.getString("fileUrl"));
+              uploadFile = FileDownloader.getDownloadedFile(fileUrl);
+              if (uploadFile != null) {
+                fileLastModfied = uploadFile.lastModified();
+              }
+            } // fileUrl
 	    
 	    if (jsonArguments.length() == 0)
 	    {
@@ -634,7 +646,24 @@ public class SendPraat
 	    
 	    if ("upload".equals(jsonMessage.getString("message")))
 	    {
-	       jsonReply = processUpload(jsonMessage, authorization);
+              if (uploadFile != null && fileLastModfied >= 0) {
+                // we sent Praat a write-file message, but we don't want to upload the file
+                // until Praat has already finished writing it
+                final int sleepMilleseconds = 100;
+                final int maximumWaitMilliseconds = 10000;
+                int iterationsLeft = maximumWaitMilliseconds/sleepMilleseconds;
+                while (fileLastModfied == uploadFile.lastModified())
+                {
+                  if (iterationsLeft-- < 0) break;
+                  Thread.sleep(sleepMilleseconds);                  
+                } // loop until the file has been modified                
+                if (fileLastModfied == uploadFile.lastModified()) // still not modified
+                {
+                  throw new Exception(
+                    "Time out waiting for Praat to update file:" + uploadFile.getName());
+                }
+              }
+              jsonReply = processUpload(jsonMessage, authorization);
 	    }
 	 } // sendpraat or upload message
       }
@@ -873,7 +902,8 @@ public class SendPraat
 	       } // next possible authorization
 	    } // unauthorized
 	 } // catch
-	 log("uploading... ");
+	 log("uploading "+file.getName()+"... ");
+         
 	 // now run the real request
 	 HttpRequestPostMultipart postRequest = new HttpRequestPostMultipart(uploadUrl, auth);
 	 postRequest.setHeader("Accept", "application/json");
