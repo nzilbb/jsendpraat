@@ -142,14 +142,6 @@ nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatRes
 		    nzilbb.jsendpraat.log("jsendpraat extension is installed: v" + event.data.version);
 		    nzilbb.jsendpraat.isInstalled = true;
 		    nzilbb.jsendpraat.version = event.data.version;
-
-                    // find out what the messaging host version is
-                  console.log("Querying message host version...");
-                    window.postMessage(
-                      { 
-                        "type": "FROM_PRAAT_PAGE", 
-                        "message": "version"
-                      }, '*');
                   
 		    if (onExtensionDetected) onExtensionDetected();
 		} else if (event.data.message == "sendpraat") {
