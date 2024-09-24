@@ -26,17 +26,16 @@ var background = chrome.runtime.connect({name: "popup"});
 background.onMessage.addListener(messageHandler);
 
 document.addEventListener('DOMContentLoaded', function () {
-    var background = chrome.extension.getBackgroundPage();
-    var urls = background.tabMedia[background.lastPageUrl];
-    listMedia(urls);
+  var background = chrome.extension.getBackgroundPage();
+  var urls = background.tabMedia[background.lastPageUrl];
+  listMedia(urls);
 });
 
 function sendpraat(script, authorization) {
-    background.postMessage(
-	{
-	    "message" : "sendpraat", 
-	    "sendpraat" : script,
-	    "authorization" : authorization // HTTP Authorization header
-	});
+  background.postMessage({
+      "message" : "sendpraat", 
+      "sendpraat" : script,
+      "authorization" : authorization // HTTP Authorization header
+    });
 }
 

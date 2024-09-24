@@ -25,10 +25,10 @@
 var background = chrome.runtime.connect({name: "content"});
 
 function registerBackgroundMessageHandler(handler) {
-    background.onMessage.addListener(handler);
+  background.onMessage.addListener(handler);
 }
 
 function postMessageToBackground(message) {
-    background.postMessage(message);
+  background.postMessage(message);
 }
 

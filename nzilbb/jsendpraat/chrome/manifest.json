@@ -1,35 +1,35 @@
 {
-    "name": "Praat Integration",
-    "version": "3.0",
-    "manifest_version": 3,
-    "description": "Allows Praat to open media on a page",
-    "icons": {
-	"16": "praat-16.png",
-	"128": "nzilbb-128.png"
-    },
-    "author": "Robert Fromont, NZILBB",
-    "background" : {
-      "service_worker": "serviceworker.js"
-    },
-    "content_scripts": [
-	{
-	    "matches": ["http://*/*", "https://*/*"],
-	    "css": ["content.css"],
-	    "js": ["content.js"],
-	    "run_at": "document_end"
-	}
-    ],
+  "name": "Praat Integration",
+  "version": "3.0",
+  "manifest_version": 3,
+  "description": "Allows Praat to open media on a page",
+  "icons": {
+    "16": "praat-16.png",
+    "128": "nzilbb-128.png"
+  },
+  "author": "Robert Fromont, NZILBB",
+  "background" : {
+    "service_worker": "serviceworker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "css": ["content.css"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
   "web_accessible_resources": [{
     "resources": [
-	"*.png",
-	"install.html",
-	"install-jsendpraat.jar"
+      "*.png",
+      "install.html",
+      "install-jsendpraat.jar"
     ],
     "matches" : [
       "*://*/*"
     ]
-    }],
-    "permissions": [
-      "tabs", "nativeMessaging", "storage"
-    ]
+  }],
+  "permissions": [
+    "tabs", "nativeMessaging", "storage"
+  ]
 }

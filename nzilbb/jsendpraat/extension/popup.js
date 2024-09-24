@@ -23,79 +23,78 @@
 // CROSS-BROWSER CODE:
 
 function messageHandler(msg) {
-    var progressMessage = document.getElementById("progressMessage");
-    progressMessage.style.display = "";
-    if (msg.error) {
-	removeAllChildren(progressMessage);
-	progressMessage.appendChild(document.createTextNode(msg.error));
-	progressMessage.classList.add("error");
-	progressMessage.title = msg.error;
-    } else if (msg.string) {
-	removeAllChildren(progressMessage);
-	progressMessage.appendChild(document.createTextNode(msg.string));
-	progressMessage.classList.remove("error");
-	progressMessage.title = msg.string;
-    }
+  var progressMessage = document.getElementById("progressMessage");
+  progressMessage.style.display = "";
+  if (msg.error) {
+    removeAllChildren(progressMessage);
+    progressMessage.appendChild(document.createTextNode(msg.error));
+    progressMessage.classList.add("error");
+    progressMessage.title = msg.error;
+  } else if (msg.string) {
+    removeAllChildren(progressMessage);
+    progressMessage.appendChild(document.createTextNode(msg.string));
+    progressMessage.classList.remove("error");
+    progressMessage.title = msg.string;
+  }
 
-    switch (msg.message) {
-    case "progress":
-	var progress = document.getElementById("progress");
-	progress.style.display = "";
-	progress.title = msg.string;
-	try { progress.value = Math.floor(msg.value * 100 / msg.maximum); } catch(x) {}
-	break;
-    case "list": 
-	var urls = msg.urls;
-	listMedia(urls);
-	break;
-    }
+  switch (msg.message) {
+  case "progress":
+    var progress = document.getElementById("progress");
+    progress.style.display = "";
+    progress.title = msg.string;
+    try { progress.value = Math.floor(msg.value * 100 / msg.maximum); } catch(x) {}
+    break;
+  case "list": 
+    var urls = msg.urls;
+    listMedia(urls);
+    break;
+  }
 }
 
 function listMedia(urls) {
-    var praatMediaList = document.getElementById("praatMediaList");
-    removeAllChildren(praatMediaList);
-    document.getElementById("progressMessage").style.display = "none";
-    document.getElementById("progress").style.display = "none";
+  var praatMediaList = document.getElementById("praatMediaList");
+  removeAllChildren(praatMediaList);
+  document.getElementById("progressMessage").style.display = "none";
+  document.getElementById("progress").style.display = "none";
+  
+  // add new urls
+  for (var u in urls) {
+    if (!document.getElementById(urls[u])) {
+      var div = document.createElement("div");
+      div.className = "media"
+      
+      var save = document.createElement("a");
+      save.className = "save";
+      save.download = urls[u].replace(/.*\//, "");
+      save.href = urls[u];
+      save.title = "Save";
+      save.target = "download";
+      var img = document.createElement("img");
+      img.src = "document-save.png";
+      save.appendChild(img);
+      div.appendChild(save);
+      
+      var praat = document.createElement("a");
+      praat.className = "praaturl";
+      praat.href = "#";
+      praat.url = urls[u];
+      praat.id = urls[u];
+      praat.title = "Open in Praat";
+      praat.onclick = function() { openInPraat(this.url); };
+      praat.appendChild(document.createTextNode(urls[u]));
+      div.appendChild(praat);
+      
+      praatMediaList.appendChild(div);
+    }
     
-    // add new urls
-    for (var u in urls)
-    {
-	if (!document.getElementById(urls[u])) {
-            var div = document.createElement("div");
-	    div.className = "media"
-	    
-            var save = document.createElement("a");
-            save.className = "save";
-            save.download = urls[u].replace(/.*\//, "");
-	    save.href = urls[u];
-            save.title = "Save";
-            save.target = "download";
-            var img = document.createElement("img");
-	    img.src = "document-save.png";
-	    save.appendChild(img);
-            div.appendChild(save);
-	    
-            var praat = document.createElement("a");
-            praat.className = "praaturl";
-	    praat.href = "#";
-            praat.url = urls[u];
-            praat.id = urls[u];
-            praat.title = "Open in Praat";
-            praat.onclick = function() { openInPraat(this.url); };
-	    praat.appendChild(document.createTextNode(urls[u]));
-            div.appendChild(praat);
-	    
-            praatMediaList.appendChild(div);
-	}
-	
-    } // next url
+  } // next url
 }
 
 function openInPraat(url) {
-    var command = ["praat", "Read from file... " + url, "Edit"];
-    sendpraat(command); // TODO how would I know the Authorizataion header value?
+  var command = ["praat", "Read from file... " + url, "Edit"];
+  sendpraat(command); // TODO how would I know the Authorizataion header value?
 }
 
 function removeAllChildren(element) {
-    while (element.firstChild) element.removeChild(element.firstChild);
+  while (element.firstChild) element.removeChild(element.firstChild);
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2015-2018 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2024 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -41,95 +41,94 @@ var tabMedia = {}; // key = page URL
 var callbackPort = {}; // key = callbackId, generally the tab ID (or "popup") 
 
 chrome.runtime.onConnect.addListener(
-    function(port) 
-    {
-	// make sure they can be called back by sendpraat
-	if (port.sender.tab) {
-	    port.callbackId = String(port.sender.tab.id);
-	} else {
-	    port.callbackId = "popup";
-	}
-	callbackPort[port.callbackId] = port;
+  function(port) {
+    // make sure they can be called back by sendpraat
+    if (port.sender.tab) {
+      port.callbackId = String(port.sender.tab.id);
+    } else {
+      port.callbackId = "popup";
+    }
+    callbackPort[port.callbackId] = port;
 
-	// react to messages
-	port.onMessage.addListener(
-	    function(msg) 
-	    {
-              console.log("msg: " + JSON.stringify(msg));
-		if (msg.message == "activateAudioTags") {
-		    if (debug) console.log("activate " + msg.urls);
-		    if (msg.urls.length > 0) {
-			// register this media for this url
-			tabMedia[port.sender.url] = msg.urls;
-			updatePageAction(port.sender.tab.id);
-		    }
-		} else if (msg.message == "sendpraat") {
-		    if (debug) console.log("sendpraat " + msg.sendpraat);
-		    checkPraatPort();
-		    msg.clientRef = port.callbackId;
-		    praatPort.postMessage(msg);
-		} else if (msg.message == "upload") {
-		    if (debug) console.log("upload " + msg.fileUrl + " to " + msg.uploadUrl);
-		    checkPraatPort();
-		    msg.clientRef = port.callbackId;
-		    praatPort.postMessage(msg);
-		}
-	    });
-    });
+    // react to messages
+    port.onMessage.addListener(
+      function(msg) 
+      {
+        console.log("msg: " + JSON.stringify(msg));
+	if (msg.message == "activateAudioTags") {
+	  if (debug) console.log("activate " + msg.urls);
+	  if (msg.urls.length > 0) {
+	    // register this media for this url
+	    tabMedia[port.sender.url] = msg.urls;
+	    updatePageAction(port.sender.tab.id);
+	  }
+	} else if (msg.message == "sendpraat") {
+	  if (debug) console.log("sendpraat " + msg.sendpraat);
+	  checkPraatPort();
+	  msg.clientRef = port.callbackId;
+	  praatPort.postMessage(msg);
+	} else if (msg.message == "upload") {
+	  if (debug) console.log("upload " + msg.fileUrl + " to " + msg.uploadUrl);
+	  checkPraatPort();
+	  msg.clientRef = port.callbackId;
+	  praatPort.postMessage(msg);
+	}
+      });
+  });
 
 chrome.tabs.onActivated.addListener(
-    function(activeInfo) {
-	updatePageAction(activeInfo.tabId);
-    });
+  function(activeInfo) {
+    updatePageAction(activeInfo.tabId);
+  });
 
 function updatePageAction(tabId) {
-    pageActionTabId = tabId;
-    chrome.tabs.get(tabId, 
-		    function(tab) {
-			// if there's praatable media registered for this URL
-			if (tabMedia[tab.url])
-			{ // show (and update) the page action
-			  //chrome.action.enable(tab.id);
-                          // TODO post message with URLs
-			}
-		    });
+  pageActionTabId = tabId;
+  chrome.tabs.get(tabId, 
+		  function(tab) {
+		    // if there's praatable media registered for this URL
+		    if (tabMedia[tab.url])
+		    { // show (and update) the page action
+		      //chrome.action.enable(tab.id);
+                      // TODO post message with URLs
+		    }
+		  });
 }
 
 function checkPraatPort() {
-    if (!praatPort) {
-        praatPort = chrome.runtime.connectNative('nzilbb.jsendpraat.chrome');
-        console.log(`chrome.runtime.connectNative: ${praatPort}`);
-        praatPort.onMessage.addListener(function(msg) {
-          console.log("praatPort: " + JSON.stringify(msg));
-	    if (msg.message == "version" || msg.code >= 900) {
-		hostVersion = msg.version;
-		console.log("nzilbb.jsendpraat.chrome: Host version is " + hostVersion);
-		if (!hostVersion || hostVersion < hostVersionMin) {
-		    console.log("nzilbb.jsendpraat.chrome: Need at least version " + hostVersionMin);
-		    praatPort.disconnect();
-		    praatPort = null;
-		    if (praatPortHasNeverInitialised) {
-			chrome.tabs.create({url:"upgrade.html"});
-		    }
-		}
-	    } else {
-		if (debug) console.log("nzilbb.jsendpraat.chrome: Received " + msg.code + " for " + msg.clientRef);
-		if (msg.clientRef) 
-		{ // reply to the last message port
-		    praatPortHasNeverInitialised = false;
-		    try { callbackPort[msg.clientRef].postMessage(msg); } catch(x) {}
-		}
-	    }
-	});
-	praatPort.onDisconnect.addListener(function() {
-	    console.log("nzilbb.jsendpraat.chrome: Disconnected");
-	    praatPort = null;
-	    if (praatPortHasNeverInitialised) {
-		chrome.tabs.create({url:"install.html"});
-	    }
-	});
-	// check the version of the host
-	console.log("nzilbb.jsendpraat.chrome: Checking host version...");
-	praatPort.postMessage({ message: "version" });
-    }
+  if (!praatPort) {
+    praatPort = chrome.runtime.connectNative('nzilbb.jsendpraat.chrome');
+    console.log(`chrome.runtime.connectNative: ${praatPort}`);
+    praatPort.onMessage.addListener(function(msg) {
+      console.log("praatPort: " + JSON.stringify(msg));
+      if (msg.message == "version" || msg.code >= 900) {
+	hostVersion = msg.version;
+	console.log("nzilbb.jsendpraat.chrome: Host version is " + hostVersion);
+	if (!hostVersion || hostVersion < hostVersionMin) {
+	  console.log("nzilbb.jsendpraat.chrome: Need at least version " + hostVersionMin);
+	  praatPort.disconnect();
+	  praatPort = null;
+	  if (praatPortHasNeverInitialised) {
+	    chrome.tabs.create({url:"upgrade.html"});
+	  }
+	}
+      } else {
+	if (debug) console.log("nzilbb.jsendpraat.chrome: Received " + msg.code + " for " + msg.clientRef);
+	if (msg.clientRef) 
+	{ // reply to the last message port
+	  praatPortHasNeverInitialised = false;
+	  try { callbackPort[msg.clientRef].postMessage(msg); } catch(x) {}
+	}
+      }
+    });
+    praatPort.onDisconnect.addListener(function() {
+      console.log("nzilbb.jsendpraat.chrome: Disconnected");
+      praatPort = null;
+      if (praatPortHasNeverInitialised) {
+	chrome.tabs.create({url:"install.html"});
+      }
+    });
+    // check the version of the host
+    console.log("nzilbb.jsendpraat.chrome: Checking host version...");
+    praatPort.postMessage({ message: "version" });
+  }
 }
