@@ -78,7 +78,7 @@ window.addEventListener("message", function(event) {
       window.postMessage({
         type: 'FROM_PRAAT_EXTENSION',
         message: 'ACK',
-        version: "3.0"// TODO get version from manifest
+        version: chrome.runtime.getManifest().version
       }, '*'); 
       break;
     case "sendpraat":
