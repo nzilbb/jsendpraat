@@ -20,6 +20,8 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
+console.log("service_worker.js");
+
 var debug = true;
 
 // host version checking
@@ -30,15 +32,13 @@ var hostVersionMin = "20180606.1040";
 var praatPort = null;
 var praatPortHasNeverInitialised = true;
 
-// track the tab that the current page action popup is about
-var pageActionTabId = null;
-var lastPageUrl = null;
-
 // track media on each tab, so we can keep the page action popup up-to-date when they change tabs
-var tabMedia = {}; // key = page URL
+// TODO move to chrome.storage.local
+var tabMedia = {}; // key = page URL 
 
 // track the content.js/popup.js connections, so we can pass back updates from
-var callbackPort = {}; // key = callbackId, generally the tab ID (or "popup")
+// TODO move to chrome.storage.local
+var callbackPort = {}; // key = callbackId, generally the tab ID (or "popup") 
 
 chrome.runtime.onConnect.addListener(
     function(port) 
@@ -55,6 +55,7 @@ chrome.runtime.onConnect.addListener(
 	port.onMessage.addListener(
 	    function(msg) 
 	    {
+              console.log("msg: " + JSON.stringify(msg));
 		if (msg.message == "activateAudioTags") {
 		    if (debug) console.log("activate " + msg.urls);
 		    if (msg.urls.length > 0) {
@@ -85,19 +86,21 @@ function updatePageAction(tabId) {
     pageActionTabId = tabId;
     chrome.tabs.get(tabId, 
 		    function(tab) {
-			lastPageUrl = tab.url;
 			// if there's praatable media registered for this URL
-			if (tabMedia[lastPageUrl])
+			if (tabMedia[tab.url])
 			{ // show (and update) the page action
-			    chrome.pageAction.show(tab.id);
+			  //chrome.action.enable(tab.id);
+                          // TODO post message with URLs
 			}
 		    });
 }
 
 function checkPraatPort() {
     if (!praatPort) {
-	praatPort = chrome.runtime.connectNative('nzilbb.jsendpraat.chrome');
-	praatPort.onMessage.addListener(function(msg) {
+        praatPort = chrome.runtime.connectNative('nzilbb.jsendpraat.chrome');
+        console.log(`chrome.runtime.connectNative: ${praatPort}`);
+        praatPort.onMessage.addListener(function(msg) {
+          console.log("praatPort: " + JSON.stringify(msg));
 	    if (msg.message == "version" || msg.code >= 900) {
 		hostVersion = msg.version;
 		console.log("nzilbb.jsendpraat.chrome: Host version is " + hostVersion);

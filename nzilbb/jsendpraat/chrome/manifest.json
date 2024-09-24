@@ -1,21 +1,15 @@
 {
     "name": "Praat Integration",
-    "version": "2.1",
-    "manifest_version": 2,
+    "version": "3.0",
+    "manifest_version": 3,
     "description": "Allows Praat to open media on a page",
     "icons": {
 	"16": "praat-16.png",
 	"128": "nzilbb-128.png"
     },
     "author": "Robert Fromont, NZILBB",
-    "page_action": {
-	"default_title": "Praat",
-	"default_icon": "praat-16.png",
-	"default_popup": "popup.html"    
-    },
     "background" : {
- 	"scripts": ["background.js"],
-	"persistent": false
+      "service_worker": "serviceworker.js"
     },
     "content_scripts": [
 	{
@@ -25,12 +19,17 @@
 	    "run_at": "document_end"
 	}
     ],
-    "web_accessible_resources": [
+  "web_accessible_resources": [{
+    "resources": [
 	"*.png",
 	"install.html",
 	"install-jsendpraat.jar"
     ],
+    "matches" : [
+      "*://*/*"
+    ]
+    }],
     "permissions": [
-	"tabs", "nativeMessaging"
+      "tabs", "nativeMessaging", "storage"
     ]
 }
