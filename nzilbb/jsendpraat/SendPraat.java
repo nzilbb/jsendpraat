@@ -1,5 +1,5 @@
 //
-// Copyright 2004-2022 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2004-2024 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -601,7 +601,8 @@ public class SendPraat
 	 }
 	 else
 	 { // assume a sendpraat message
-	    JSONArray jsonArguments = jsonMessage.getJSONArray("sendpraat");
+	    JSONArray jsonArguments = jsonMessage.has("sendpraat")?
+              jsonMessage.getJSONArray("sendpraat"):null;
 
             // if there's an upload file involved, get its current modification time
             // so we can track when Praat has updated it
@@ -615,7 +616,7 @@ public class SendPraat
               }
             } // fileUrl
 	    
-	    if (jsonArguments.length() == 0)
+	    if (jsonArguments == null || jsonArguments.length() == 0)
 	    {
 	       if ("sendpraat".equals(jsonMessage.getString("message"))) // not for "upload"
 	       {
