@@ -26,9 +26,17 @@ var background = chrome.runtime.connect({name: "popup"});
 background.onMessage.addListener(messageHandler);
 
 document.addEventListener('DOMContentLoaded', function () {
-  var background = chrome.extension.getBackgroundPage();
-  var urls = background.tabMedia[background.lastPageUrl];
-  listMedia(urls);
+  chrome.storage.local.get("lastPageUrl").then((url) => {
+    console.log(`lastPageUrl: ${url.lastPageUrl}`);
+    chrome.storage.local.get([url.lastPageUrl]).then((media) => {
+      if (media) {
+        console.log("urlsJson: "+JSON.stringify(media[url.lastPageUrl]));
+        listMedia(JSON.parse(media[url.lastPageUrl]));
+      } else { // no media
+        listMedia([]); // ensure the list is empty
+      }
+    });
+  });
 });
 
 function sendpraat(script, authorization) {

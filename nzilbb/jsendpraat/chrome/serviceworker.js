@@ -32,12 +32,8 @@ var hostVersionMin = "20180606.1040";
 var praatPort = null;
 var praatPortHasNeverInitialised = true;
 
-// track media on each tab, so we can keep the page action popup up-to-date when they change tabs
-// TODO move to chrome.storage.local
-var tabMedia = {}; // key = page URL 
-
 // track the content.js/popup.js connections, so we can pass back updates from
-// TODO move to chrome.storage.local
+// TODO move to chrome.storage.local?
 var callbackPort = {}; // key = callbackId, generally the tab ID (or "popup") 
 
 chrome.runtime.onConnect.addListener(
@@ -52,16 +48,21 @@ chrome.runtime.onConnect.addListener(
 
     // react to messages
     port.onMessage.addListener(
-      function(msg) 
-      {
+      function(msg) {
         console.log("msg: " + JSON.stringify(msg));
 	if (msg.message == "activateAudioTags") {
 	  if (debug) console.log("activate " + msg.urls);
 	  if (msg.urls.length > 0) {
 	    // register this media for this url
-	    tabMedia[port.sender.url] = msg.urls;
-	    updatePageAction(port.sender.tab.id);
+            var item = {};
+            item[port.sender.url] = JSON.stringify(msg.urls);
+            chrome.storage.local.set(item).then(() => {
+              chrome.storage.local.get(null).then((items) => {
+                console.log(JSON.stringify(items));
+              });
+            })
 	  }
+	  updatePageAction(port.sender.tab.id);
 	} else if (msg.message == "sendpraat") {
 	  if (debug) console.log("sendpraat " + msg.sendpraat);
 	  checkPraatPort();
@@ -83,15 +84,20 @@ chrome.tabs.onActivated.addListener(
 
 function updatePageAction(tabId) {
   pageActionTabId = tabId;
-  chrome.tabs.get(tabId, 
-		  function(tab) {
-		    // if there's praatable media registered for this URL
-		    if (tabMedia[tab.url])
-		    { // show (and update) the page action
-		      //chrome.action.enable(tab.id);
-                      // TODO post message with URLs
-		    }
-		  });
+  chrome.tabs.get(
+    tabId, (tab) => {
+      chrome.storage.local.set({"lastPageUrl":tab.url});
+      // if there's praatable media registered for this URL
+      chrome.storage.local.get(tab.url).then((urlsJson) => {
+        console.log("urlsJson " + urlsJson[tab.url]);
+        if (urlsJson[tab.url]) { // show (and update) the page action
+	  chrome.action.enable(tab.id);
+        } else {
+          console.log("disabling " + tab.url);
+	  chrome.action.disable(tab.id);
+        }
+      });
+    });
 }
 
 function checkPraatPort() {

@@ -11,6 +11,11 @@
   "background" : {
     "service_worker": "serviceworker.js"
   },
+  "action": {
+    "default_title": "Praat",
+    "default_icon": "praat-16.png",
+    "default_popup": "popup.html"    
+  },
   "content_scripts": [
     {
       "matches": ["http://*/*", "https://*/*"],
