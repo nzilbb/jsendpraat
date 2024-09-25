@@ -159,7 +159,6 @@ function findAudioUrls() {
     var anchor = anchorTags[a];
     if (anchor.href) {
       var href = anchor.href.replace(/#.*$/,"");
-      console.log(`href ${href}`);
       if (href.toLowerCase().endsWith(".wav")
           || href.toLowerCase().endsWith(".flac")
           || href.toLowerCase().endsWith(".mp3")) {
