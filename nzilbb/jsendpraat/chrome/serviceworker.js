@@ -20,8 +20,6 @@
 //    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 
-console.log("service_worker.js");
-
 var debug = true;
 
 // host version checking
@@ -44,6 +42,7 @@ chrome.runtime.onConnect.addListener(
     } else {
       port.callbackId = "popup";
     }
+    if (debug) console.log("Tab port connected: " + port.callbackId);
     callbackPort[port.callbackId] = port;
 
     // react to messages
@@ -56,12 +55,16 @@ chrome.runtime.onConnect.addListener(
 	    // register this media for this url
             var item = {};
             item[port.sender.url] = JSON.stringify(msg.urls);
-            chrome.storage.local.set(item).then(() => {
-              chrome.storage.local.get(null).then((items) => {
-                console.log(JSON.stringify(items));
-              });
-            })
-	  }
+            chrome.storage.local.set(item);
+            // set badge as the number of URLs
+            chrome.action.setBadgeText({
+              tabId: port.sender.tab.id,
+              text: ""+msg.urls.length });
+	  } else { // clear badge
+            chrome.action.setBadgeText({
+              tabId: port.sender.tab.id,
+              text: null });
+          }
 	  updatePageAction(port.sender.tab.id);
 	} else if (msg.message == "sendpraat") {
 	  if (debug) console.log("sendpraat " + msg.sendpraat);
@@ -73,13 +76,27 @@ chrome.runtime.onConnect.addListener(
 	  checkPraatPort();
 	  msg.clientRef = port.callbackId;
 	  praatPort.postMessage(msg);
+	} else if (msg.message == "version") {
+	  if (debug) console.log("version");
+	  checkPraatPort();
+	  msg.clientRef = port.callbackId;
+	  praatPort.postMessage(msg);
 	}
+        return Promise.resolve(msg);
       });
+    port.onDisconnect.addListener(
+      function(port) {
+        if (debug) console.log("Tab port disconnected: " + port.callbackId);
+        callbackPort[port.callbackId] = port;
+        return Promise.resolve("ok");
+      });
+    return Promise.resolve("ok");
   });
 
 chrome.tabs.onActivated.addListener(
   function(activeInfo) {
     updatePageAction(activeInfo.tabId);
+    return Promise.resolve("ok");
   });
 
 function updatePageAction(tabId) {
@@ -89,11 +106,9 @@ function updatePageAction(tabId) {
       chrome.storage.local.set({"lastPageUrl":tab.url});
       // if there's praatable media registered for this URL
       chrome.storage.local.get(tab.url).then((urlsJson) => {
-        console.log("urlsJson " + urlsJson[tab.url]);
         if (urlsJson[tab.url]) { // show (and update) the page action
 	  chrome.action.enable(tab.id);
         } else {
-          console.log("disabling " + tab.url);
 	  chrome.action.disable(tab.id);
         }
       });
@@ -103,12 +118,18 @@ function updatePageAction(tabId) {
 function checkPraatPort() {
   if (!praatPort) {
     praatPort = chrome.runtime.connectNative('nzilbb.jsendpraat.chrome');
-    console.log(`chrome.runtime.connectNative: ${praatPort}`);
+    if (debug) console.log(`chrome.runtime.connectNative: ${praatPort}`);
     praatPort.onMessage.addListener(function(msg) {
-      console.log("praatPort: " + JSON.stringify(msg));
+      if (debug) console.log("praatPort: " + JSON.stringify(msg));
       if (msg.message == "version" || msg.code >= 900) {
 	hostVersion = msg.version;
 	console.log("nzilbb.jsendpraat.chrome: Host version is " + hostVersion);
+        if (hostVersion) {
+          chrome.action.setTitle({
+            title: "v"+chrome.runtime.getManifest().version + " ("+hostVersion+")" });
+        }
+	try { callbackPort[msg.clientRef].postMessage(msg); } catch(x) {}
+        
 	if (!hostVersion || hostVersion < hostVersionMin) {
 	  console.log("nzilbb.jsendpraat.chrome: Need at least version " + hostVersionMin);
 	  praatPort.disconnect();
@@ -125,16 +146,20 @@ function checkPraatPort() {
 	  try { callbackPort[msg.clientRef].postMessage(msg); } catch(x) {}
 	}
       }
+      return Promise.resolve("ok");
     });
     praatPort.onDisconnect.addListener(function() {
-      console.log("nzilbb.jsendpraat.chrome: Disconnected");
+      if (debug) console.log("nzilbb.jsendpraat.chrome: Disconnected");
       praatPort = null;
       if (praatPortHasNeverInitialised) {
 	chrome.tabs.create({url:"install.html"});
       }
+      return Promise.resolve("disconnected");
     });
     // check the version of the host
-    console.log("nzilbb.jsendpraat.chrome: Checking host version...");
+    if (debug) console.log("nzilbb.jsendpraat.chrome: Checking host version...");
     praatPort.postMessage({ message: "version" });
   }
 }
+
+chrome.action.setTitle({ title: "v"+chrome.runtime.getManifest().version });

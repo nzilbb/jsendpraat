@@ -63,7 +63,8 @@ function activateAudioTags(urls) {
 registerBackgroundMessageHandler(function(msg) {
   if (msg.message == "progress"
       || msg.message == "upload"
-      || msg.message == "sendpraat") {
+      || msg.message == "sendpraat"
+      || msg.message == "version") {
     msg.type = "FROM_PRAAT_EXTENSION";
     window.postMessage(msg, '*');
   }
@@ -88,7 +89,7 @@ window.addEventListener("message", function(event) {
       upload(event.data.sendpraat, event.data.uploadUrl, event.data.fileParameter, event.data.fileUrl, event.data.otherParameters, event.data.authorization);
       break;
     case "version":
-      sendpraat(event.data.sendpraat, event.data.authorization);
+      messageHostVersion();
       break;
     } // switch on event.data.message
   } // FROM_PRAAT_PAGE
