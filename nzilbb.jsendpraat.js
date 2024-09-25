@@ -59,11 +59,12 @@
 // namespace
 var nzilbb = nzilbb || {};
 nzilbb.jsendpraat = nzilbb.jsendpraat || {};
+nzilbb.jsendpraat.chrome = nzilbb.jsendpraat.chrome || {};
 
 nzilbb.jsendpraat.debug = true;
 
 nzilbb.jsendpraat.log = function(message) {
-    if (nzilbb.jsendpraat.debug) console.log(message);
+  if (nzilbb.jsendpraat.debug) console.log(message);
 }
 
 /**
@@ -73,12 +74,22 @@ nzilbb.jsendpraat.log = function(message) {
  *  - null otherwise
  */
 nzilbb.jsendpraat.isInstalled = null;
+/**
+ * The version of the browser extension.
+ */
 nzilbb.jsendpraat.version = null;
+/**
+ * The version of the Native Messaging Host (locally installed software that liases
+ * between the extension and Praat) if known.
+ */
+nzilbb.jsendpraat.chrome.version = null;
 
 /**
  * Callback invoked when the jsendpraat extension is detected.
  *
  * @callback extensionDetectedCallback
+ * @param {string} version The version of the extension/native messaging host
+ *  (the locally installed software that liases between the browser extension and Praat).
  */
 /**
  * Callback invoked when progress is updated.
@@ -129,62 +140,74 @@ nzilbb.jsendpraat.version = null;
  * @callback {sendpraatResponse} [onSendPraatResponse] Invoked whenever the response to a sendpraat(script) call is received.
  * @param {progressCallback} [onProgress] Invoked when a progress update is received - e.g. during download or upload of files.
  * @callback {uploadResponse} [onUploadResponse] Invoked when the response to an upload() call is received.
+ * @callback {extensionDetectedCallback} [onNativeMessagingHostDetected] Invoked once, if communication with the Native Messaging Host is established.
  */
-nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatResponse, onProgress, onUploadResponse) {
-    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    if (!isSafari && window.postMessage) { // extension could be compatible with this browser
-        window.addEventListener("message", function(event) {
-          console.log("message: " + JSON.stringify(event));
-	    // We only accept messages from ourselves
-            if (event.source != window) return;          
-            if (event.data.type == "FROM_PRAAT_EXTENSION") {
-		if (event.data.type && event.data.message == "ACK") {
-		    nzilbb.jsendpraat.log("jsendpraat extension is installed: v" + event.data.version);
-		    nzilbb.jsendpraat.isInstalled = true;
-		    nzilbb.jsendpraat.version = event.data.version;
-                  
-		    if (onExtensionDetected) onExtensionDetected();
-		} else if (event.data.message == "sendpraat") {
-		    nzilbb.jsendpraat.log("jsendpraat sendpraat: " + JSON.stringify(event.data));
-		    if (onSendPraatResponse) {
-			onSendPraatResponse(event.data.code, event.data.error);
-		    }
-		} else if (event.data.message == "progress") {
-		    nzilbb.jsendpraat.log("jsendpraat progress: " + JSON.stringify(event.data));
-		    if (onProgress) {
-			onProgress(event.data.string, event.data.value, event.data.maximum, 
-				   event.data.error, event.data.code);
-		    }
-		} else if (event.data.message == "upload") {
-		    nzilbb.jsendpraat.log("jsendpraat upload: " + JSON.stringify(event.data));
-		    if (onUploadResponse) {
-			var messages = "";
-			// if it's LaBB-CAT, we can return more detail
-			for (var e in event.data.errors) messages += event.data.errors[e] + "\n";
-			messages = messages.trim();
-			for (var m in event.data.messages) messages += event.data.messages[m] + "\n";
-			// display mapping messages too
-			for (var m in event.data.model.mappings)
-			{
-			    var mapping = event.data.model.mappings[m];
-			    messages += mapping.layer + ":\t" + mapping.status + "\n";
-			}
-			onUploadResponse(event.data.code, messages, event.data.error);
-		    }
-		} else if (event.data.message == "version") {
-		  nzilbb.jsendpraat.log("jsendpraat version: " + JSON.stringify(event.data));
-		}
-	    } // FROM_PRAAT_EXTENSION
-	}, false); // addEventListener
+nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatResponse, onProgress, onUploadResponse, onNativeMessagingHostDetected) {
+  var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (!isSafari && window.postMessage) { // extension could be compatible with this browser
+    window.addEventListener("message", function(event) {
+      // We only accept messages from ourselves
+      if (event.source != window) return;          
+      if (event.data.type == "FROM_PRAAT_EXTENSION") {
+	if (event.data.type && event.data.message == "ACK") {
+	  nzilbb.jsendpraat.log("jsendpraat extension is installed: v" + event.data.version);
+	  nzilbb.jsendpraat.isInstalled = true;
+	  nzilbb.jsendpraat.version = event.data.version;
 
-	// ping the extension to see if there's an acknowledgement
-        window.postMessage({ type: 'FROM_PRAAT_PAGE', message: 'PING' }, '*');
+          if (onNativeMessagingHostDetected) {
+            // find out what the messaging host version is
+            window.postMessage({ 
+              "type": "FROM_PRAAT_PAGE", 
+              "message": "version"
+            }, '*');
+          }
+          
+	  if (onExtensionDetected) onExtensionDetected(nzilbb.jsendpraat.version);
+	} else if (event.data.message == "version") { // native messaging version
+	  nzilbb.jsendpraat.log("jsendpraat Native Messaging Host: v" + event.data.version);
+	  nzilbb.jsendpraat.chrome.version = event.data.version;
+	  if (onNativeMessagingHostDetected) {
+            onNativeMessagingHostDetected(nzilbb.jsendpraat.chrome.version);
+          }
+	} else if (event.data.message == "sendpraat") {
+	  nzilbb.jsendpraat.log("jsendpraat sendpraat: " + JSON.stringify(event.data));
+	  if (onSendPraatResponse) {
+	    onSendPraatResponse(event.data.code, event.data.error);
+	  }
+	} else if (event.data.message == "progress") {
+	  nzilbb.jsendpraat.log("jsendpraat progress: " + JSON.stringify(event.data));
+	  if (onProgress) {
+	    onProgress(event.data.string, event.data.value, event.data.maximum, 
+		       event.data.error, event.data.code);
+	  }
+	} else if (event.data.message == "upload") {
+	  nzilbb.jsendpraat.log("jsendpraat upload: " + JSON.stringify(event.data));
+	  if (onUploadResponse) {
+	    var messages = "";
+	    // if it's LaBB-CAT, we can return more detail
+	    for (var e in event.data.errors) messages += event.data.errors[e] + "\n";
+	    messages = messages.trim();
+	    for (var m in event.data.messages) messages += event.data.messages[m] + "\n";
+	    // display mapping messages too
+	    for (var m in event.data.model.mappings)
+	    {
+	      var mapping = event.data.model.mappings[m];
+	      messages += mapping.layer + ":\t" + mapping.status + "\n";
+	    }
+	    onUploadResponse(event.data.code, messages, event.data.error);
+	  }
+	}
+      } // FROM_PRAAT_EXTENSION
+    }, false); // addEventListener
 
-	return true; // browser compatible
-    } else { // browser doesn't have window.postMessage so the extension isn't compatible
-	nzilbb.jsendpraat.isInstalled = false;
-	return false; // browser not compatible
-    }    
+    // ping the extension to see if there's an acknowledgement
+    window.postMessage({ type: 'FROM_PRAAT_PAGE', message: 'PING' }, '*');
+    
+    return true; // browser compatible
+  } else { // browser doesn't have window.postMessage so the extension isn't compatible
+    nzilbb.jsendpraat.isInstalled = false;
+    return false; // browser not compatible
+  }    
 }
 
 /**
@@ -198,26 +221,26 @@ nzilbb.jsendpraat.detectExtension = function(onExtensionDetected, onSendPraatRes
  *  or script is null, or true otherwise.
  */
 nzilbb.jsendpraat.sendpraat = function(script, authorization) {
-    if (!nzilbb.jsendpraat.isInstalled) return false;
-    // ensure the script is an array whose firest element is "praat" or "als"
-    if (!script) return false;
-    if (Object.prototype.toString.call(script) === '[object Array]') {
-	if (script.length == 0) return false;
-	if (script[0].toLowerCase() != "praat"
-	    && script[0].toLowerCase() != "als") {
-	    script.unshift("praat");
-	}
-    } else { // not an array, presumably a one-line script string
-	script = [ "praat", script ];
+  if (!nzilbb.jsendpraat.isInstalled) return false;
+  // ensure the script is an array whose firest element is "praat" or "als"
+  if (!script) return false;
+  if (Object.prototype.toString.call(script) === '[object Array]') {
+    if (script.length == 0) return false;
+    if (script[0].toLowerCase() != "praat"
+	&& script[0].toLowerCase() != "als") {
+      script.unshift("praat");
     }
-    window.postMessage(
-        { 
-            "type": "FROM_PRAAT_PAGE", 
-            "message": "sendpraat",
-            "sendpraat": script,
-	    "authorization": authorization
-        }, '*');
-    return true;
+  } else { // not an array, presumably a one-line script string
+    script = [ "praat", script ];
+  }
+  window.postMessage(
+    { 
+      "type": "FROM_PRAAT_PAGE", 
+      "message": "sendpraat",
+      "sendpraat": script,
+      "authorization": authorization
+    }, '*');
+  return true;
 }
 
 /**
@@ -236,29 +259,29 @@ nzilbb.jsendpraat.sendpraat = function(script, authorization) {
  *  or script is null, or true otherwise.
  */
 nzilbb.jsendpraat.upload = function(script, uploadUrl, fileParameter, fileUrl, otherParameters, authorization) {
-    if (!nzilbb.jsendpraat.isInstalled) return false;
-    // ensure the script is an array whose firest element is "praat" or "als"
-    if (script) {
-	if (Object.prototype.toString.call(script) === '[object Array]') {
-	    if (script.length == 0) return false;
-	    if (script[0].toLowerCase() != "praat"
-		&& script[0].toLowerCase() != "als") {
-		script.unshift("praat");
-	    }
-	} else { // not an array, presumably a one-line script string
-	    script = [ "praat", script ];
-	}
+  if (!nzilbb.jsendpraat.isInstalled) return false;
+  // ensure the script is an array whose firest element is "praat" or "als"
+  if (script) {
+    if (Object.prototype.toString.call(script) === '[object Array]') {
+      if (script.length == 0) return false;
+      if (script[0].toLowerCase() != "praat"
+	  && script[0].toLowerCase() != "als") {
+	script.unshift("praat");
+      }
+    } else { // not an array, presumably a one-line script string
+      script = [ "praat", script ];
     }
-    window.postMessage(
-        { 
-            "type": "FROM_PRAAT_PAGE", 
-            "message": "upload",
-            "sendpraat": script,
-	    "uploadUrl" : uploadUrl,
-	    "fileParameter" : fileParameter, 
-	    "fileUrl" : fileUrl, // original URL for the file to upload
-	    "otherParameters" : otherParameters,
-	    "authorization": authorization
-        }, '*');
-    return true;
+  }
+  window.postMessage(
+    { 
+      "type": "FROM_PRAAT_PAGE", 
+      "message": "upload",
+      "sendpraat": script,
+      "uploadUrl" : uploadUrl,
+      "fileParameter" : fileParameter, 
+      "fileUrl" : fileUrl, // original URL for the file to upload
+      "otherParameters" : otherParameters,
+      "authorization": authorization
+    }, '*');
+  return true;
 }
