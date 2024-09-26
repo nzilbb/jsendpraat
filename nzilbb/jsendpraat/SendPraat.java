@@ -47,6 +47,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.swing.JFileChooser;
@@ -181,7 +182,7 @@ public class SendPraat
    private int iPid = -1;
    /** Whether to send message sizes */
    private boolean bSendMessageSize = true;
-   
+
    /**
     * Constructor
     */
@@ -595,7 +596,7 @@ public class SendPraat
 	 if ("version".equals(jsonMessage.getString("message")))
 	 {
 	    jsonReply.put("message", "version");
-	    jsonReply.put("version", "20240610.1514");
+	    jsonReply.put("version", getClass().getPackage().getImplementationVersion());
 	    jsonReply.remove("error");
 	    jsonReply.put("code", 0);
 	 }

@@ -471,16 +471,8 @@ public class FileDownloader extends Thread {
    */
   public FileDownloader setUserAgent(HttpURLConnection connection) { // TODO use pom.xml Implementation-Title/Version
     if (UserAgent == null) {
-      // get our version info from the comment of the jar file we're built into
-      try {
-        URL thisClassUrl = getClass().getResource(getClass().getSimpleName() + ".class");
-        if (thisClassUrl.toString().startsWith("jar:")) {
-          URI thisJarUri = new URI(thisClassUrl.toString().replaceAll("jar:(.*)!.*","$1"));
-          JarFile thisJarFile = new JarFile(new File(thisJarUri));
-          UserAgent = thisJarFile.getComment();
-        }
-      } catch (Throwable t) {
-      }
+      UserAgent = ""+getClass().getPackage().getImplementationTitle()
+        + " " + getClass().getPackage().getImplementationVersion();
     }
     connection.setRequestProperty("user-agent", UserAgent);
     return this;
