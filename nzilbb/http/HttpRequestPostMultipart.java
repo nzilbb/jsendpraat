@@ -22,17 +22,19 @@
 
 package nzilbb.http;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.io.File;
-import java.io.InputStream;
-import java.util.Random;
-import java.io.OutputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.Random;
+import java.util.jar.JarFile;
 
 /**
  * <p>Client HTTP Request class.
@@ -129,10 +131,9 @@ public class HttpRequestPostMultipart {
   public HttpRequestPostMultipart(HttpURLConnection connection, String sAuthorization)
     throws IOException {
     this.connection = connection;
-    // TODO set User-Agent
+    setUserAgent();
     if (sAuthorization != null) {
-      connection.setRequestProperty(
-        "Authorization", sAuthorization);
+      connection.setRequestProperty("Authorization", sAuthorization);
     }
     connection.setDoOutput(true);
     connection.setRequestProperty(
@@ -161,6 +162,27 @@ public class HttpRequestPostMultipart {
     this(new URL(urlString), sAuthorization);
   }   
    
+  static String UserAgent = null;
+  /**
+   * Sets the user-agent header to indicate the name/version of the library.
+   */
+  public HttpRequestPostMultipart setUserAgent() {
+    if (UserAgent == null) {
+      // get our version info from the comment of the jar file we're built into
+      try {
+        URL thisClassUrl = getClass().getResource(getClass().getSimpleName() + ".class");
+        if (thisClassUrl.toString().startsWith("jar:")) {
+          URI thisJarUri = new URI(thisClassUrl.toString().replaceAll("jar:(.*)!.*","$1"));
+          JarFile thisJarFile = new JarFile(new File(thisJarUri));
+          UserAgent = thisJarFile.getComment();
+        }
+      } catch (Throwable t) {
+      }
+    }
+    setHeader("user-agent", UserAgent);
+    return this;
+   } // end of setUserAgent()
+  
   @SuppressWarnings("rawtypes")
   private void postCookies() {
     StringBuffer cookieList = new StringBuffer();

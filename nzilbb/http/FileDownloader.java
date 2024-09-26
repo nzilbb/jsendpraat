@@ -22,10 +22,11 @@
 
 package nzilbb.http;
 
-import java.net.*;
 import java.io.*;
-import java.util.*;
+import java.net.*;
 import java.text.*;
+import java.util.*;
+import java.util.jar.JarFile;
 import javax.swing.*;
 
 /**
@@ -281,18 +282,27 @@ public class FileDownloader extends Thread {
             String strSuffix = null;
             try {
               // if there's a filename specified
-              String sContentDisposition 
-                = cnxn.getHeaderField("Content-Disposition");
+              String sContentDisposition = cnxn.getHeaderField("Content-Disposition");
               if (sContentDisposition != null) {
+                // try for filename*= parameter
                 MessageFormat msgContentDisposition 
-                  = new MessageFormat("attachment; filename={0}"); // TODO account for possible filename*= parameter
-                try {
+                  = new MessageFormat("attachment; filename={1}; filename*={0}");
+                try { 
                   Object[] aFileName = msgContentDisposition.parse(
                     sContentDisposition);
                   strSuffix = "-" + aFileName[0].toString()
-                    // replace any eclosing quotes
-                    .replaceAll("\"","");
-                } catch(Throwable t) {
+                    // replace any enclosing quotes
+                    .replaceAll("^\"","").replaceAll("\"$","");
+                } catch(Throwable t) { // no filename*= parameter
+                  // try for just filename= parameter
+                  msgContentDisposition = new MessageFormat("attachment; filename={0}");
+                  try {
+                    Object[] aFileName = msgContentDisposition.parse(sContentDisposition);
+                    strSuffix = "-" + aFileName[0].toString()
+                      // replace any eclosing quotes
+                      .replaceAll("^\"","").replaceAll("\"$","");
+                  } catch(Throwable t2) {
+                  }
                 }
               }
               if (strSuffix == null) {
@@ -372,7 +382,7 @@ public class FileDownloader extends Thread {
    */
   public URLConnection openConnection(URL url) throws Exception {
     HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-    // TODO set User-Agent
+    setUserAgent(connection);
     try {
       connection.getInputStream(); // throws exception if unauthorized
       return connection;
@@ -382,7 +392,7 @@ public class FileDownloader extends Thread {
         // first, see if we already have a valid authorization for this host
         for (String authorization : getAuthorizations(url)) {
           connection = (HttpURLConnection)url.openConnection();
-          // TODO set User-Agent
+          setUserAgent(connection);
           try {
             connection.setRequestProperty("Authorization", authorization);
             connection.getInputStream(); // throws exception if unauthorized
@@ -432,7 +442,7 @@ public class FileDownloader extends Thread {
           authorization = "Basic " + java.util.Base64.getEncoder()
             .encodeToString((username+":"+password).getBytes());
           connection = (HttpURLConnection)url.openConnection();
-          // TODO set User-Agent
+          setUserAgent(connection);
           connection.setRequestProperty("Authorization", authorization);
           try { 
             connection.getInputStream(); // maybe throws exception
@@ -455,6 +465,27 @@ public class FileDownloader extends Thread {
     return null;
   } // end of openConnection()
 
+  static String UserAgent = null;
+  /**
+   * Sets the user-agent header to indicate the name/version of the library.
+   */
+  public FileDownloader setUserAgent(HttpURLConnection connection) { // TODO use pom.xml Implementation-Title/Version
+    if (UserAgent == null) {
+      // get our version info from the comment of the jar file we're built into
+      try {
+        URL thisClassUrl = getClass().getResource(getClass().getSimpleName() + ".class");
+        if (thisClassUrl.toString().startsWith("jar:")) {
+          URI thisJarUri = new URI(thisClassUrl.toString().replaceAll("jar:(.*)!.*","$1"));
+          JarFile thisJarFile = new JarFile(new File(thisJarUri));
+          UserAgent = thisJarFile.getComment();
+        }
+      } catch (Throwable t) {
+      }
+    }
+    connection.setRequestProperty("user-agent", UserAgent);
+    return this;
+  } // end of setUserAgent()
+  
   /**
    * Access to the local copy of the file.
    */
