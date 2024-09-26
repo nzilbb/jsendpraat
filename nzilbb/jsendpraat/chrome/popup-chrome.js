@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   });
+  return false;
 });
 
 function sendpraat(script, authorization) {

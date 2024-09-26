@@ -48,7 +48,6 @@ chrome.runtime.onConnect.addListener(
     // react to messages
     port.onMessage.addListener(
       function(msg) {
-        console.log("msg: " + JSON.stringify(msg));
 	if (msg.message == "activateAudioTags") {
 	  if (debug) console.log("activate " + msg.urls);
 	  if (msg.urls.length > 0) {

@@ -93,6 +93,7 @@ window.addEventListener("message", function(event) {
       break;
     } // switch on event.data.message
   } // FROM_PRAAT_PAGE
+  return Promise.resolve("ok");
 }, false);
 
 // find all audio elements on the page

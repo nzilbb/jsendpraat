@@ -22,13 +22,29 @@
 
 // BROWSER-SPECIFIC CODE:
 
-var background = chrome.runtime.connect({name: "content"});
+var background = null
+var messageHandler = null;
 
 function registerBackgroundMessageHandler(handler) {
-  background.onMessage.addListener(handler);
+  messageHandler = handler;
 }
 
 function postMessageToBackground(message) {
+  if (!background) {
+    background = chrome.runtime.connect({name: "content"});
+    background.onDisconnect.addListener(()=>{ // probably never fired?
+      background = null;
+    });
+    
+    if (messageHandler) {
+      background.onMessage.addListener(messageHandler);
+    }
+  }
   background.postMessage(message);
 }
+
+window.addEventListener('pageshow', (event) => {
+  // If the page is restored from BFCache, ensure a new connection is set up.
+  if (event.persisted) background = null;
+});
 
