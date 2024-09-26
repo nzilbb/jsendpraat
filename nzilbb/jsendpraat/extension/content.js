@@ -66,7 +66,7 @@ registerBackgroundMessageHandler(function(msg) {
       || msg.message == "sendpraat"
       || msg.message == "version") {
     msg.type = "FROM_PRAAT_EXTENSION";
-    window.postMessage(msg, '*');
+    window.postMessage(msg);
   }
 });
 
@@ -80,7 +80,7 @@ window.addEventListener("message", function(event) {
         type: 'FROM_PRAAT_EXTENSION',
         message: 'ACK',
         version: chrome.runtime.getManifest().version
-      }, '*'); 
+      }); 
       break;
     case "sendpraat":
       sendpraat(event.data.sendpraat, event.data.authorization);
