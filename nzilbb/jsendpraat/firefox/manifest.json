@@ -36,5 +36,10 @@
   }],
   "permissions": [
     "tabs", "nativeMessaging", "storage"
-  ]
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "@jsendpraat"
+    }
+  }
 }
