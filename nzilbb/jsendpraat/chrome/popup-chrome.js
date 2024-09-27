@@ -1,5 +1,5 @@
 //
-// Copyright 2015 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2024 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -21,30 +21,3 @@
 //
 
 // BROWSER-SPECIFIC CODE:
-
-var background = chrome.runtime.connect({name: "popup"});
-background.onMessage.addListener(messageHandler);
-
-document.addEventListener('DOMContentLoaded', function () {
-  chrome.storage.local.get("lastPageUrl").then((url) => {
-    console.log(`lastPageUrl: ${url.lastPageUrl}`);
-    chrome.storage.local.get([url.lastPageUrl]).then((media) => {
-      if (media) {
-        console.log("urlsJson: "+JSON.stringify(media[url.lastPageUrl]));
-        listMedia(JSON.parse(media[url.lastPageUrl]));
-      } else { // no media
-        listMedia([]); // ensure the list is empty
-      }
-    });
-  });
-  return false;
-});
-
-function sendpraat(script, authorization) {
-  background.postMessage({
-      "message" : "sendpraat", 
-      "sendpraat" : script,
-      "authorization" : authorization // HTTP Authorization header
-    });
-}
-

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2024 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -21,12 +21,4 @@
 //
 
 // BROWSER-SPECIFIC CODE:
-
-function registerBackgroundMessageHandler(handler) {
-    self.port.on("message", handler);
-}
-
-function postMessageToBackground(message) {
-    self.port.emit("message", message);
-}
 

@@ -22,6 +22,35 @@
 
 // CROSS-BROWSER CODE:
 
+var background = null
+var messageHandler = null;
+
+function registerBackgroundMessageHandler(handler) {
+  messageHandler = handler;
+}
+
+function postMessageToBackground(message) {
+  if (!background) {
+    background = chrome.runtime.connect({name: "content"});
+    console.log("backgound connnected");
+    background.onDisconnect.addListener(()=>{ // probably never fired?
+      background = null;
+    });
+    
+    if (messageHandler) {
+      console.log("adding message handler");
+      background.onMessage.addListener(messageHandler);
+    }
+  }
+  console.log("posting " + JSON.stringify(message));
+  background.postMessage(message);
+}
+
+window.addEventListener('pageshow', (event) => {
+  // If the page is restored from BFCache, ensure a new connection is set up.
+  if (event.persisted) background = null;
+});
+
 var debug = false;
 
 // send a script to praat

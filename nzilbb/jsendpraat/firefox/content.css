@@ -1,0 +1,6 @@
+/* style sheet for content scripts */
+
+img.openinpraat {
+    position: absolute;
+    left: -20px;
+}

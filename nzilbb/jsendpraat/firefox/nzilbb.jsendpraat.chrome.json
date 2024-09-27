@@ -1,0 +1,9 @@
+{
+  "name": "nzilbb.jsendpraat.chrome",
+  "description": "Client-side Praat interaction",
+  "path": "${exepath}",
+  "allowed_extensions": ["@jsendpraat"],    
+  "allowed_origins": ["chrome-extension://hmmnebkieionilgpepijmfabdickmnig/"],
+  "type": "stdio"
+    
+}

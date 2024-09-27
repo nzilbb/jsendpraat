@@ -25,7 +25,7 @@
     <mkdir dir="${build}"/>
   </target>
 
-  <target name="all" depends="dist,chromeextension">
+  <target name="all" depends="dist,chromeextension,firefoxextension">
   </target>
   
   <target name="compile" depends="init"
@@ -138,16 +138,17 @@
       <fileset dir="${chromesrc}" includes="popup-chrome.js"/>
       <fileset dir="${sharedsrc}" includes="popup.js"/>
     </concat>
+    <copy todir="${chromesrc}" file="${sharedsrc}/background.js" />
     <copy todir="${chromesrc}" file="${sharedsrc}/popup.html" />
     <copy todir="${chromesrc}" file="${sharedsrc}/document-save.png" />
     <copy todir="${chromesrc}" file="${sharedsrc}/install.html" />
     <copy todir="${chromesrc}" file="${sharedsrc}/upgrade.html" />
     <!-- package extension -->
-    <zip zipfile="${dist}/${ant.project.name}.zip" 
+    <zip zipfile="${dist}/${ant.project.name}-chrome.zip" 
 	 basedir="${chromesrc}">
     </zip>
-    <delete file="${dist}/${ant.project.name}-src.zip"/>
-    <zip zipfile="${dist}/${ant.project.name}-src.zip">
+    <delete file="${dist}/${ant.project.name}-chrome-src.zip"/>
+    <zip zipfile="${dist}/${ant.project.name}-chrome-src.zip">
       <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles}" />
     </zip>
     <!-- cleanup -->
@@ -156,41 +157,36 @@
   </target>
 
   <target name="firefoxextension" depends="hostinstaller"
-	  description="package the jsendpraat chrome extension">
-    <echo message="The Firefox exension is now deprecated. Firefox supports WebExtensions, so the Chrome extension can be used for Firefox too."/>
-    <!-- clean up editor backups -->
-    <delete verbose="true">
-      <fileset dir=".." includes="**/*~" defaultexcludes="no" />
-    </delete>    
+	  description="package the jsendpraat firefox extension">
+    <!-- temporarily copy extension key -->
+    <copy file="${chromepem}" tofile="${firefoxsrc}/key.pem" />
     <!-- copy native messaging host installer -->
-    <copy file="${dist}/install-${ant.project.name}.jar" tofile="${firefoxsrc}/data/install-${ant.project.name}.jar" />
+    <copy file="${dist}/install-${ant.project.name}.jar" tofile="${firefoxsrc}/install-${ant.project.name}.jar" />
     <!-- merge cross-browser code with browser-specific code -->
-    <concat destfile="${firefoxsrc}/data/content.js">
-      <fileset dir="${firefoxsrc}/data/" includes="content-firefox.js"/>
+    <concat destfile="${firefoxsrc}/content.js">
+      <fileset dir="${firefoxsrc}" includes="content-firefox.js"/>
       <fileset dir="${sharedsrc}" includes="content.js"/>
     </concat>
-    <concat destfile="${firefoxsrc}/data/popup.js">
-      <fileset dir="${firefoxsrc}/data/" includes="popup-firefox.js"/>
+    <concat destfile="${firefoxsrc}/popup.js">
+      <fileset dir="${firefoxsrc}" includes="popup-firefox.js"/>
       <fileset dir="${sharedsrc}" includes="popup.js"/>
     </concat>
-    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/popup.html" />
-    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/document-save.png" />
-    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/install.html" />
-    <copy todir="${firefoxsrc}/data" file="${sharedsrc}/upgrade.html" />
+    <copy todir="${firefoxsrc}" file="${sharedsrc}/background.js" />
+    <copy todir="${firefoxsrc}" file="${sharedsrc}/popup.html" />
+    <copy todir="${firefoxsrc}" file="${sharedsrc}/document-save.png" />
+    <copy todir="${firefoxsrc}" file="${sharedsrc}/install.html" />
+    <copy todir="${firefoxsrc}" file="${sharedsrc}/upgrade.html" />
     <!-- package extension -->
-    <exec executable="jpm" dir="${firefoxsrc}">
-      <arg value="xpi"/>
-    </exec>
-    <copy todir="${dist}">
-      <fileset dir="${firefoxsrc}" includes="*.xpi" />
-    </copy>
-    <delete file="${dist}/${ant.project.name}-src.zip"/>
-    <zip zipfile="${dist}/${ant.project.name}-src.zip">
+    <zip zipfile="${dist}/${ant.project.name}-firefox.zip" 
+	 basedir="${firefoxsrc}">
+    </zip>
+    <delete file="${dist}/${ant.project.name}-firefox-src.zip"/>
+    <zip zipfile="${dist}/${ant.project.name}-firefox-src.zip">
       <fileset dir="${src}" includes="${srcfiles} ${installersrcfiles}" />
     </zip>
-
     <!-- cleanup -->
-    <delete file="${firefoxsrc}/data/install-${ant.project.name}.jar"/>
+    <delete file="${firefoxsrc}/key.pem"/>
+    <delete file="${firefoxsrc}/install-${ant.project.name}.jar"/>
   </target>
   
   <target name="clean" description="clean up" >

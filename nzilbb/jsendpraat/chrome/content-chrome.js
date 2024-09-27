@@ -1,5 +1,5 @@
 //
-// Copyright 2015-2016 New Zealand Institute of Language, Brain and Behaviour, 
+// Copyright 2015-2024 New Zealand Institute of Language, Brain and Behaviour, 
 // University of Canterbury
 // Written by Robert Fromont - robert.fromont@canterbury.ac.nz
 //
@@ -21,30 +21,4 @@
 //
 
 // BROWSER-SPECIFIC CODE:
-
-var background = null
-var messageHandler = null;
-
-function registerBackgroundMessageHandler(handler) {
-  messageHandler = handler;
-}
-
-function postMessageToBackground(message) {
-  if (!background) {
-    background = chrome.runtime.connect({name: "content"});
-    background.onDisconnect.addListener(()=>{ // probably never fired?
-      background = null;
-    });
-    
-    if (messageHandler) {
-      background.onMessage.addListener(messageHandler);
-    }
-  }
-  background.postMessage(message);
-}
-
-window.addEventListener('pageshow', (event) => {
-  // If the page is restored from BFCache, ensure a new connection is set up.
-  if (event.persisted) background = null;
-});
 
