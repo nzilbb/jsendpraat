@@ -286,22 +286,32 @@ public class FileDownloader extends Thread {
               if (sContentDisposition != null) {
                 // try for filename*= parameter
                 MessageFormat msgContentDisposition 
-                  = new MessageFormat("attachment; filename={1}; filename*={0}");
+                  = new MessageFormat("attachment; filename*={0}; filename={1}");
                 try { 
                   Object[] aFileName = msgContentDisposition.parse(
                     sContentDisposition);
                   strSuffix = "-" + aFileName[0].toString()
                     // replace any enclosing quotes
                     .replaceAll("^\"","").replaceAll("\"$","");
-                } catch(Throwable t) { // no filename*= parameter
-                  // try for just filename= parameter
-                  msgContentDisposition = new MessageFormat("attachment; filename={0}");
-                  try {
-                    Object[] aFileName = msgContentDisposition.parse(sContentDisposition);
+                } catch(Throwable t) { // try other way around
+                  msgContentDisposition 
+                    = new MessageFormat("attachment; filename={1}; filename*={0}");
+                  try { 
+                    Object[] aFileName = msgContentDisposition.parse(
+                      sContentDisposition);
                     strSuffix = "-" + aFileName[0].toString()
-                      // replace any eclosing quotes
+                      // replace any enclosing quotes
                       .replaceAll("^\"","").replaceAll("\"$","");
-                  } catch(Throwable t2) {
+                  } catch(Throwable t2) { // no filename*= parameter
+                    // try for just filename= parameter
+                    msgContentDisposition = new MessageFormat("attachment; filename={0}");
+                    try {
+                      Object[] aFileName = msgContentDisposition.parse(sContentDisposition);
+                      strSuffix = "-" + aFileName[0].toString()
+                        // replace any eclosing quotes
+                        .replaceAll("^\"","").replaceAll("\"$","");
+                    } catch(Throwable t3) {
+                    }
                   }
                 }
               }
