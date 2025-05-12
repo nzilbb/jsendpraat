@@ -39,6 +39,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Vector;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -573,25 +574,59 @@ public class HostInstaller extends UtilityApp {
       File manifest = new File(manifestDirChrome, "nzilbb.jsendpraat.chrome.json");
       if (manifest.exists()) {
         message("Delete: " + manifest.getPath());
-        manifest.delete();
+        if (!manifest.delete()) {
+          error("Could not delete: " + manifest.getPath()
+                +"\nPlease close all Chrome windows and try again.");
+          if (!manifest.delete()) {
+            error("Still could not delete: " + manifest.getPath());
+          }
+        }
       }
       progress.setValue(3);
       manifest = new File(manifestDirChromium, "nzilbb.jsendpraat.chrome.json");
       if (manifest.exists()) {
         message("Delete: " + manifest.getPath());
-        manifest.delete();
+        if (!manifest.delete()) {
+          error("Could not delete: " + manifest.getPath()
+                +"\nPlease close all Chromium windows and try again.");
+          if (!manifest.delete()) {
+            error("Still could not delete: " + manifest.getPath());
+          }
+        }
       }
       progress.setValue(4);
       manifest = new File(manifestDirFirefox, "nzilbb.jsendpraat.chrome.json");
       if (manifest.exists()) {
         message("Delete: " + manifest.getPath());
-        manifest.delete();
+        if (!manifest.delete()) {
+          error("Could not delete: " + manifest.getPath()
+                +"\nPlease close all Firefox windows and try again.");
+          if (!manifest.delete()) {
+            error("Still could not delete: " + manifest.getPath());
+          }
+        }
       }
       progress.setValue(5);
       message("Delete: " + binDir.getPath());
-      recursivelyDeleteFiles(binDir);
-     
-      message("Uninstalled");
+      Vector<File> notDeleted = recursivelyDeleteFiles(binDir);
+      if (notDeleted.size() > 0) {
+        error(
+          "Could not delete the following file, please close all browser windows and try again: "
+          + notDeleted.stream()
+          .map(path->"\n"+path)
+          .collect(Collectors.joining()));
+        notDeleted = recursivelyDeleteFiles(binDir);
+        if (notDeleted.size() > 0) {
+          error(
+            "Could not delete the following file, please close all browser windows and try again: "
+            + notDeleted.stream()
+            .map(path->"\n"+path)
+            .collect(Collectors.joining()));
+          message("Uninstall was not completely successful.");
+        }
+      } else {
+        message("Uninstalled.");
+      }
       progress.setValue(progress.getMaximum());
     } catch(Exception x) {
       error(x.getMessage());
