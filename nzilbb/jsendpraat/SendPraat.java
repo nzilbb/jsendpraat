@@ -891,7 +891,11 @@ public class SendPraat
 		  connection = (HttpURLConnection)uploadUrl.openConnection();
 		  try
 		  {
-		     connection.setRequestProperty("Authorization", authorizationCandidate);
+                    if (authorizationCandidate.startsWith("Cookie ")) { // set Cookie header
+                      connection.setRequestProperty("Cookie", authorizationCandidate.substring(7));
+                    } else { // set Authorization header
+                      connection.setRequestProperty("Authorization", authorizationCandidate);
+                    }
 		     connection.getInputStream(); // throws exception if unauthorized
 		     connection.disconnect();
 		     auth = authorizationCandidate;
@@ -914,8 +918,9 @@ public class SendPraat
 	 {
 	    postRequest.setParameter(parameter, otherParameters.get(parameter));
 	 } // next parameter
+         connection = postRequest.post();
 	 BufferedReader reader = new BufferedReader(
-	    new InputStreamReader(postRequest.post().getInputStream()));
+	    new InputStreamReader(connection.getInputStream()));
 	 StringBuilder s = new StringBuilder();
 	 String sLine = reader.readLine();
 	 while (sLine != null)

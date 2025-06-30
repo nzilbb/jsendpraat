@@ -131,9 +131,15 @@ public class HttpRequestPostMultipart {
   public HttpRequestPostMultipart(HttpURLConnection connection, String sAuthorization)
     throws IOException {
     this.connection = connection;
+    connection.setUseCaches(false);
+    connection.setInstanceFollowRedirects(false);
     setUserAgent();
     if (sAuthorization != null) {
-      connection.setRequestProperty("Authorization", sAuthorization);
+      if (sAuthorization.startsWith("Cookie ")) { // set Cookie header
+        connection.setRequestProperty("Cookie", sAuthorization.substring(7));
+      } else { // set Authorization header
+        connection.setRequestProperty("Authorization", sAuthorization);
+      }
     }
     connection.setDoOutput(true);
     connection.setRequestProperty(

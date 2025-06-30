@@ -404,7 +404,11 @@ public class FileDownloader extends Thread {
           connection = (HttpURLConnection)url.openConnection();
           setUserAgent(connection);
           try {
-            connection.setRequestProperty("Authorization", authorization);
+            if (authorization.startsWith("Cookie ")) { // set Cookie header
+              connection.setRequestProperty("Cookie", authorization.substring(7));
+            } else { // set Authorization header
+              connection.setRequestProperty("Authorization", authorization);
+            }
             connection.getInputStream(); // throws exception if unauthorized
             // if we got this far, it worked!
             return connection;
@@ -453,7 +457,11 @@ public class FileDownloader extends Thread {
             .encodeToString((username+":"+password).getBytes());
           connection = (HttpURLConnection)url.openConnection();
           setUserAgent(connection);
-          connection.setRequestProperty("Authorization", authorization);
+          if (authorization.startsWith("Cookie ")) { // set Cookie header
+            connection.setRequestProperty("Cookie", authorization.substring(7));
+          } else { // set Authorization header
+            connection.setRequestProperty("Authorization", authorization);
+          }
           try { 
             connection.getInputStream(); // maybe throws exception
 
