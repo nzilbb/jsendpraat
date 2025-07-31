@@ -219,6 +219,17 @@ public class HostInstaller extends UtilityApp {
         // firefox
         File mozillaDir = new File(homeDir, ".mozilla");
         firefoxInstalled = mozillaDir.exists();
+        if (!firefoxInstalled) {
+          // might be the snap install
+          //~/snap/firefox
+          File firefoxSnap = new File(new File(homeDir, "snap"), "firefox");
+          if (firefoxSnap.exists()) {
+            message("Detected firefox snap installation: " + firefoxSnap.getPath());
+            firefoxInstalled = true;
+            // we have to create ~/.mozilla ourselves
+            mozillaDir.mkdir();
+          }
+        }
         manifestDirFirefox = new File(mozillaDir, "native-messaging-hosts");
         break;
       } case Windows: {
@@ -282,7 +293,7 @@ public class HostInstaller extends UtilityApp {
     if (firefoxInstalled) {
       if(!manifestDirFirefox.exists()) {
         message("Installing firefox manifest in: " + manifestDirFirefox.getPath());
-        if (!mkdirs && manifestDirFirefox.mkdir()) {
+        if (mkdirs && !manifestDirFirefox.mkdir()) {
           error("Could not create manifest directory: " + manifestDirFirefox.getPath());
         }
       } else {
