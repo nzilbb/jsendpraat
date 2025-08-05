@@ -321,7 +321,7 @@ public class SendPraat
 	 // allow the user to point us to the file
 	 JOptionPane.showMessageDialog(
 	    null, "Praat can not be found."
-	    +"\nPlease specify the location where you have installed Praat and SendPraat", 
+	    +"\nPlease specify the location where you have installed Praat", 
 	    "Praat not found", JOptionPane.ERROR_MESSAGE);
 	 JFileChooser chooser = new JFileChooser();
 	 try
